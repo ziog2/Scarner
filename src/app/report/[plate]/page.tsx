@@ -17,8 +17,8 @@ export async function generateMetadata({ params }: ReportPageProps): Promise<Met
   const { plate } = await params;
   const decoded = decodeURIComponent(plate).toUpperCase();
   return {
-    title: `Report targa ${decoded} — Scarner`,
-    description: `Report storico gratuito per la targa ${decoded}: chilometraggio, revisioni, danni, specifiche tecniche e controlli ufficiali italiani.`,
+    title: `Report for ${decoded} — Scarner`,
+    description: `Free vehicle history report for plate ${decoded}: mileage history, inspections, damage records, specifications, and official free checks.`,
   };
 }
 
@@ -36,15 +36,15 @@ async function ReportContent({ params, searchParams }: ReportPageProps) {
     return (
       <div className="container report-shell">
         <section className="report-hero-card" style={{ maxWidth: 640, margin: '24px auto' }}>
-          <span className="status-pill danger">Targa non valida</span>
+          <span className="status-pill danger">Invalid plate</span>
           <h1 className="report-vehicle-title" style={{ marginTop: 12 }}>
-            Impossibile generare il report per “{decodedPlate}”
+            Unable to generate a report for “{decodedPlate}”
           </h1>
           <p className="report-vehicle-sub" style={{ marginBottom: 20 }}>
             {outcome.error}
           </p>
           <Link href="/" className="btn-primary" style={{ maxWidth: 260 }}>
-            ← Torna alla ricerca targa
+            ← Back to plate lookup
           </Link>
         </section>
       </div>
@@ -63,12 +63,12 @@ export default function ReportPage({ params, searchParams }: ReportPageProps) {
           fallback={
             <div className="container report-shell">
               <section className="report-hero-card" style={{ maxWidth: 640, margin: '24px auto' }}>
-                <span className="status-pill info">Analisi in corso</span>
+                <span className="status-pill info">Analyzing</span>
                 <h1 className="report-vehicle-title" style={{ marginTop: 12 }}>
-                  Generazione del report veicolo…
+                  Generating vehicle report…
                 </h1>
                 <p className="report-vehicle-sub">
-                  Validazione targa italiana e raccolta delle sezioni del report.
+                  Validating license plate format and assembling report sections.
                 </p>
               </section>
             </div>

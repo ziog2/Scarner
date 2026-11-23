@@ -9,8 +9,8 @@ import { VehicleType } from '@/types/report';
 type InputMode = 'manual' | 'photo';
 
 const VEHICLE_OPTIONS: { type: VehicleType; label: string; example: string }[] = [
-  { type: 'car', label: 'Auto', example: 'GG 482 KL' },
-  { type: 'motorcycle', label: 'Moto', example: 'FE 39281' },
+  { type: 'car', label: 'Car', example: 'GG 482 KL' },
+  { type: 'motorcycle', label: 'Motorcycle', example: 'FE 39281' },
   { type: 'moped', label: '50cc', example: 'X2B 4KP' },
 ];
 
@@ -24,7 +24,7 @@ export function PlateSearchCard() {
   const [submittedError, setSubmittedError] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Fase 2 preview: screenshot/photo local preview
+  // Phase 2 preview: local screenshot/photo reference
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export function PlateSearchCard() {
     event.preventDefault();
     const checked = analyzeItalianPlate(rawPlate, vehicleType);
     if (!checked.isValid) {
-      setSubmittedError(checked.validationMessage ?? 'Inserisci una targa italiana valida.');
+      setSubmittedError(checked.validationMessage ?? 'Please enter a valid license plate.');
       return;
     }
 
@@ -101,7 +101,7 @@ export function PlateSearchCard() {
 
   return (
     <div className="search-card" onPaste={handlePaste}>
-      <div className="mode-tabs" role="tablist" aria-label="Modalità inserimento targa">
+      <div className="mode-tabs" role="tablist" aria-label="Plate input mode">
         <button
           id="tab-manual-plate"
           type="button"
@@ -110,7 +110,7 @@ export function PlateSearchCard() {
           className={`mode-tab ${inputMode === 'manual' ? 'active' : ''}`}
           onClick={() => setInputMode('manual')}
         >
-          Inserisci targa
+          Enter Plate
         </button>
         <button
           id="tab-photo-ocr"
@@ -120,8 +120,8 @@ export function PlateSearchCard() {
           className={`mode-tab ${inputMode === 'photo' ? 'active' : ''}`}
           onClick={() => setInputMode('photo')}
         >
-          Foto / Screenshot
-          <span className="mode-badge">Fase 2</span>
+          Photo / Screenshot
+          <span className="mode-badge">Phase 2</span>
         </button>
       </div>
 
@@ -148,13 +148,13 @@ export function PlateSearchCard() {
               capture="environment"
               onChange={handleFileChange}
               style={{ display: 'none' }}
-              aria-label="Carica foto o screenshot della targa"
+              aria-label="Upload a photo or screenshot of the license plate"
             />
             <div style={{ fontWeight: 700, fontSize: '0.94rem', marginBottom: 4 }}>
-              Carica una foto, trascinala qui o incolla uno screenshot (Ctrl+V)
+              Upload a photo, drag &amp; drop here, or paste a screenshot (Ctrl+V)
             </div>
             <div style={{ fontSize: '0.82rem', color: 'var(--ink-secondary)' }}>
-              PNG, JPG o WEBP — l’immagine resta in locale sul tuo browser
+              PNG, JPG, or WEBP — stays locally in your browser
             </div>
           </div>
 
@@ -163,22 +163,22 @@ export function PlateSearchCard() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photoPreviewUrl}
-                alt={`Anteprima ${photoFileName ?? 'foto targa'}`}
+                alt={`Preview ${photoFileName ?? 'plate photo'}`}
                 className="photo-preview-img"
               />
             </div>
           )}
 
           <div className="photo-phase2-note">
-            <strong>Estrazione automatica OCR in arrivo nella Fase 2:</strong> puoi già tenere lo
-            screenshot aperto qui sopra come riferimento e digitare la targa nel riquadro sotto per
-            generare subito il report.
+            <strong>Automatic OCR extraction coming in Phase 2:</strong> you can already keep your
+            screenshot open above as a visual reference and type the plate below to generate the
+            report right away.
           </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="vehicle-selector" role="radiogroup" aria-label="Tipo di veicolo">
+        <div className="vehicle-selector" role="radiogroup" aria-label="Vehicle type">
           {VEHICLE_OPTIONS.map((option) => (
             <button
               key={option.type}
@@ -196,7 +196,7 @@ export function PlateSearchCard() {
         </div>
 
         <label htmlFor="plate-input" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 6, color: 'var(--ink-secondary)' }}>
-          Numero di targa italiana
+          License plate number (Italian EU format)
         </label>
 
         <div className={`plate-input-shell ${showInvalid ? 'invalid' : ''}`}>
@@ -238,14 +238,14 @@ export function PlateSearchCard() {
           ) : analysis.isValid ? (
             <>
               <span>
-                {analysis.plateCategory} · Serie {analysis.seriesCode}
+                {analysis.plateCategory} · Series {analysis.seriesCode}
               </span>
               <span className="mono">~{analysis.estimatedRegistrationPeriod}</span>
             </>
           ) : showInvalid ? (
             <span>{analysis.validationMessage}</span>
           ) : (
-            <span>Inserisci la targa senza preoccuparti degli spazi (es. GG482KL o FE39281).</span>
+            <span>Type the plate with or without spaces (e.g., GG482KL or FE39281).</span>
           )}
         </div>
 
@@ -255,12 +255,12 @@ export function PlateSearchCard() {
           className="btn-primary"
           disabled={isNavigating}
         >
-          {isNavigating ? 'Generazione report in corso…' : 'Genera report gratuito'}
+          {isNavigating ? 'Generating report…' : 'Generate Free Report'}
         </button>
       </form>
 
       <div className="sample-presets">
-        <p className="sample-presets-title">Oppure esplora un report di esempio completo</p>
+        <p className="sample-presets-title">Or explore a full sample report</p>
         <div className="sample-list">
           {SAMPLE_PLATES.map((sample) => (
             <button

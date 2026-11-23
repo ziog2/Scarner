@@ -70,8 +70,9 @@ function coerceMotoPlate(token: string): string {
 }
 
 /**
- * Estrae possibili targhe italiane valide da testo OCR grezzo (es. output di Tesseract.js o Vision API).
- * Pronto per essere usato nella Fase 2 (scansione da foto o screenshot).
+ * Extracts valid Italian license plate candidates from raw OCR text
+ * (e.g., output from Tesseract.js or a Vision/ALPR API).
+ * Ready to be wired up in Phase 2 (photo & screenshot plate scanning).
  */
 export function extractItalianPlateCandidates(
   rawText: string,
@@ -113,12 +114,12 @@ export function extractItalianPlateCandidates(
 }
 
 /**
- * Provider segnaposto per la Fase 2 (scansione targa da foto/screenshot).
- * Verrà sostituito da un motore OCR client-side (es. Tesseract.js) o API ALPR/Vision.
+ * Placeholder OCR provider for Phase 2 (photo & screenshot scanning).
+ * Will be replaced by a free client-side OCR engine (e.g., Tesseract.js) or an ALPR/Vision API.
  */
 export class Phase2PlaceholderOcrProvider implements PlateOcrProvider {
   readonly id = 'phase2-ocr-stub';
-  readonly label = 'Scansione Foto/Screenshot (Fase 2)';
+  readonly label = 'Photo / Screenshot Scan (Phase 2)';
 
   async extractPlateFromImage(): Promise<OcrExtractionResult> {
     return {
@@ -126,7 +127,7 @@ export class Phase2PlaceholderOcrProvider implements PlateOcrProvider {
       provider: this.id,
       candidates: [],
       message:
-        'Il riconoscimento automatico da foto e screenshot sarà attivato nella Fase 2. Al momento inserisci la targa manualmente.',
+        'Automatic plate extraction from photos and screenshots will be enabled in Phase 2. Please enter the plate manually for now.',
     };
   }
 }

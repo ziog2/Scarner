@@ -1,84 +1,84 @@
 # Scarner
 
-**Scarner** è una web app open-source nata come alternativa **gratuita e trasparente** ai report storici a pagamento per auto e moto (come carVertical).
+**Scarner** is an open-source web application built as a **free, transparent alternative** to paid vehicle history report services (such as carVertical) for cars and motorcycles.
 
-L'obiettivo è partire dall'inserimento manuale della targa italiana (auto, moto o ciclomotore) per generare un report chiaro e completo, per poi evolvere verso il riconoscimento automatico della targa da foto o screenshot (Fase 2).
+In **Phase 1**, users enter a license plate manually (car, motorcycle, or moped) to generate a structured vehicle history report. In **Phase 2**, plate entry will be automated from photos or screenshots using OCR/ALPR.
 
-## Funzionalità incluse (Fase 1)
+## Features (Phase 1)
 
-- **Ricerca manuale targa italiana** per **Auto** (`AA 123 BB`), **Moto** (`AB 12345`) e **Ciclomotori 50cc** (`X12 3AB`).
-- **Validazione reale & stima anno**: verifica le regole ufficiali delle targhe italiane (esclusione lettere `I, O, Q, U` dal 1994) e stima il periodo di immatricolazione dalla serie alfanumerica.
-- **Report completo stile carVertical**:
-  - Panoramica con **Indice Scarner (0–100)** e 6 controlli rapidi
-  - **Grafico chilometraggio interattivo** con rilevamento scalature (*rollback*) e tabella revisioni
-  - **Mappa vettoriale danni** dedicata sia alle **auto** sia alle **moto**
-  - Controllo furto, copertura RCA e stato legale/amministrativo
-  - Specifiche tecniche, classe Euro, emissioni CO₂, idoneità neopatentati e stima bollo
-  - Valutazione di mercato con barra di posizionamento
-  - Richiami costruttore e cronologia unificata (Timeline)
-- **Esportazione PDF One-Pager** tramite stampa browser ottimizzata (`@media print`).
-- **Verifica ufficiale gratuita in 1 clic**: collegamenti diretti ai portali istituzionali italiani gratuiti (Il Portale dell'Automobilista, Ministero dell'Interno, ACI).
-- **Anteprima Fase 2 (Foto / Screenshot)**: puoi già caricare o incollare (`Ctrl+V`) uno screenshot della targa per trascriverla comodamente; il modulo OCR (`src/lib/ocr/plateOcr.ts`) è già predisposto con la logica di pulizia e disambiguazione delle targhe italiane.
+- **Manual License Plate Lookup** supporting **Cars** (`AA 123 BB`), **Motorcycles** (`AB 12345`), and **50cc Mopeds** (`X12 3AB`) with automatic vehicle-type detection.
+- **Real Plate Validation & Registration Year Estimation**: enforces post-1994 Italian plate rules (excluding `I, O, Q, U`) and estimates the registration period from the alphabetical plate series.
+- **Comprehensive carVertical-Style Report**:
+  - Executive overview with **Scarner Trust Score (0–100)** and 6 quick status checks
+  - **Interactive Odometer Chart** with automatic mileage rollback detection and inspection records
+  - **Vector Damage Blueprint** tailored to both **cars** and **motorcycles**
+  - Theft check, compulsory insurance (RCA), and legal/administrative status
+  - Technical specifications, Euro emissions class, CO₂ output, novice driver eligibility, and estimated annual road tax
+  - Market valuation range bar
+  - Manufacturer safety recalls and unified chronological timeline
+- **One-Page PDF Export** via print-optimized CSS (`@media print`).
+- **One-Click Official Free Checks**: direct links to official free public portals (Il Portale dell'Automobilista for inspections, insurance, and Euro class; Ministry of the Interior for stolen vehicles; ACI for road tax) with a 1-click plate copy helper.
+- **Phase 2 Preview (Photo / Screenshot)**: upload, drag-and-drop, or paste (`Ctrl+V`) a screenshot right in the browser as a visual reference while typing; the OCR module (`src/lib/ocr/plateOcr.ts`) is already structured with Italian plate candidate extraction and positional OCR disambiguation.
 
-## Targhe di esempio pronte da testare
+## Sample Plates Included
 
-| Targa | Veicolo | Scenario dimostrato |
+| Plate | Vehicle | Scenario |
 | --- | --- | --- |
-| `GG 482 KL` | Volkswagen Golf 8 2.0 TDI (2021) | Storia lineare e pulita (94/100) |
-| `FR 719 MN` | BMW 320d Touring (2018) | Anomalia chilometrica (-48.100 km) + 2 sinistri (41/100) |
-| `FE 39281` | Ducati Monster 937 (2023) | Report moto con lieve scivolata documentata (82/100) |
+| `GG 482 KL` | Volkswagen Golf 8 2.0 TDI (2021) | Clean history (94/100) |
+| `FR 719 MN` | BMW 320d Touring (2018) | Odometer rollback (-48,100 km) + 2 damage records (41/100) |
+| `FE 39281` | Ducati Monster 937 (2023) | Motorcycle report with minor slide damage (82/100) |
 
-Puoi anche inserire qualsiasi altra targa italiana valida per ottenere l'analisi reale del formato/anno più una scheda dimostrativa completa.
+You can also enter any other valid plate to run real format/year analysis alongside a deterministic demo profile.
 
-## Avvio in locale
+## Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Apri `http://localhost:3000` nel browser.
+Open `http://localhost:3000` in your browser.
 
-### Comandi utili
+### Scripts
 
 ```bash
-npm run lint   # Controllo ESLint
-npm run build  # Build di produzione e verifica TypeScript
+npm run lint   # Run ESLint
+npm run build  # Build production bundle & run TypeScript checks
 ```
 
-## Struttura del progetto
+## Project Structure
 
 ```text
 src/
 ├── app/
-│   ├── api/report/route.ts         # Endpoint REST GET /api/report?plate=...&type=...
-│   ├── report/[plate]/page.tsx     # Pagina condivisibile del report veicolo
-│   ├── globals.css                 # Design system Vanilla CSS + @media print
-│   ├── layout.tsx                  # Layout root + font (Plus Jakarta Sans & JetBrains Mono)
-│   └── page.tsx                    # Homepage Scarner
+│   ├── api/report/route.ts         # REST endpoint GET /api/report?plate=...&type=...
+│   ├── report/[plate]/page.tsx     # Shareable vehicle report page
+│   ├── globals.css                 # Vanilla CSS design system + @media print rules
+│   ├── layout.tsx                  # Root layout & fonts (Plus Jakarta Sans & JetBrains Mono)
+│   └── page.tsx                    # Scarner homepage
 ├── components/
-│   ├── DamageDiagram.tsx           # Mappa SVG zone carrozzeria auto / moto
-│   ├── MileageChart.tsx            # Grafico SVG chilometraggio con evidenziazione rollback
-│   ├── PlateSearchCard.tsx         # Input targa italiana + anteprima Fase 2 foto/screenshot
-│   ├── SiteHeader.tsx              # Header di navigazione
-│   └── VehicleReportView.tsx       # Vista completa del report
+│   ├── DamageDiagram.tsx           # Technical SVG damage zone blueprint (car & motorcycle)
+│   ├── MileageChart.tsx            # Interactive SVG odometer chart with rollback alerts
+│   ├── PlateSearchCard.tsx         # License plate input + Phase 2 photo/screenshot preview
+│   ├── SiteHeader.tsx              # Top navigation header
+│   └── VehicleReportView.tsx       # Full vehicle history report view
 ├── lib/
-│   ├── ocr/plateOcr.ts             # Interfaccia & post-processing italiano per Fase 2 OCR
-│   ├── plate/italianPlate.ts       # Validatore, formattatore e stimatore anno targhe IT
+│   ├── ocr/plateOcr.ts             # Phase 2 OCR interface & plate candidate post-processor
+│   ├── plate/italianPlate.ts       # Plate validator, formatter, and registration year estimator
 │   └── providers/
-│       ├── demoProvider.ts         # Dataset dimostrativi + generatore stime
-│       ├── officialLinks.ts        # Link ai portali istituzionali gratuiti italiani
-│       ├── registry.ts             # Orchestratore modulare dei provider dati
-│       └── types.ts                # Interfaccia VehicleDataProvider
+│       ├── demoProvider.ts         # Showcase reports + deterministic fallback estimator
+│       ├── officialLinks.ts        # Official free public verification portal links
+│       ├── registry.ts             # Modular data provider orchestrator
+│       └── types.ts                # VehicleDataProvider interface
 └── types/
-    └── report.ts                   # Tipi TypeScript del dominio report
+    └── report.ts                   # Core TypeScript domain models
 docs/
-└── ARCHITECTURE.md                 # Architettura dettagliata e piano Fase 1 → Fase 2
+└── ARCHITECTURE.md                 # System architecture & Phase 1 → Phase 2 roadmap
 ```
 
-## Roadmap Fase 2 (OCR da foto/screenshot)
+## Phase 2 Roadmap (Photo & Screenshot OCR)
 
-1. Integrazione motore OCR client-side gratuito (es. `tesseract.js` o modello leggero ONNX nel browser per mantenere massima privacy e zero costi server).
-2. Rilevamento e ritaglio automatico del rettangolo targa da foto scattate su strada o screenshot di annunci online.
-3. Collegamento a `extractItalianPlateCandidates()` in `src/lib/ocr/plateOcr.ts` per compilare automaticamente il campo targa e generare il report in un solo passaggio.
-4. Aggiunta di provider open-data / API esterne configurabili in `src/lib/providers/registry.ts`.
+1. Integrate a free client-side OCR engine (e.g., `tesseract.js` or a lightweight in-browser ONNX plate detector) to preserve user privacy and keep server costs at zero.
+2. Add automatic plate bounding-box detection and cropping for street photos and online listing screenshots.
+3. Connect OCR output to `extractItalianPlateCandidates()` in `src/lib/ocr/plateOcr.ts` to auto-populate the plate field and launch the report in one step.
+4. Add configurable open-data and live external API providers in `src/lib/providers/registry.ts` and expand plate parsers to additional EU countries.

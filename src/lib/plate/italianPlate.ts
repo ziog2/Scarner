@@ -1,10 +1,10 @@
 import { PlateAnalysis, VehicleType } from '@/types/report';
 
-// Dal 1994 le targhe italiane alfanumeriche escludono le lettere I, O, Q, U.
+// Since 1994, standard Italian alphanumeric plates exclude the letters I, O, Q, and U.
 const VALID_IT_LETTERS = 'ABCDEFGHJKLMNPRSTVWXYZ';
 const CAR_REGEX = new RegExp(`^[${VALID_IT_LETTERS}]{2}[0-9]{3}[${VALID_IT_LETTERS}]{2}$`);
 const MOTO_REGEX = new RegExp(`^[${VALID_IT_LETTERS}]{2}[0-9]{5}$`);
-// Ciclomotori 50cc (dal 2006): 6 caratteri alfanumerici da set ristretto (senza A, E, I, O, Q, U)
+// 50cc mopeds (since 2006): 6 alphanumeric characters from a restricted set (excluding A, E, I, O, Q, U)
 const MOPED_REGEX = /^[BCDFGHJKLMNPRSTVWXYZ23456789]{6}$/;
 
 interface SeriesAnchor {
@@ -13,7 +13,7 @@ interface SeriesAnchor {
   label: string;
 }
 
-// Sequenza storica delle serie principali auto italiane (dal 1994 al 2026)
+// Chronological reference anchors for Italian car plate series (1994–2026)
 const CAR_SERIES_ANCHORS: SeriesAnchor[] = [
   { prefix: 'AA', year: 1994, label: '1994–1995' },
   { prefix: 'AF', year: 1995, label: '1995–1996' },
@@ -48,7 +48,7 @@ const CAR_SERIES_ANCHORS: SeriesAnchor[] = [
   { prefix: 'HB', year: 2026, label: '2026' },
 ];
 
-// Sequenza indicativa motoveicoli (dal 1999)
+// Approximate chronological anchors for Italian motorcycle plates (since 1999)
 const MOTO_SERIES_ANCHORS: SeriesAnchor[] = [
   { prefix: 'AA', year: 1999, label: '1999–2000' },
   { prefix: 'BB', year: 2002, label: '2001–2003' },
@@ -73,7 +73,7 @@ function prefixRank(prefix: string): number {
 function estimateFromAnchors(prefix: string, anchors: SeriesAnchor[]): { year: number; label: string } {
   const rank = prefixRank(prefix);
   if (rank < 0) {
-    return { year: 2020, label: 'Periodo non stimabile' };
+    return { year: 2020, label: 'Period unavailable' };
   }
 
   let matched = anchors[0];
@@ -117,12 +117,11 @@ export function analyzeItalianPlate(rawInput: string, preferredType?: VehicleTyp
       seriesCode: '',
       estimatedRegistrationPeriod: '—',
       estimatedYear: null,
-      plateCategory: 'Non inserita',
-      validationMessage: 'Inserisci una targa italiana (es. GG 482 KL per auto oppure FE 39281 per moto).',
+      plateCategory: 'Not entered',
+      validationMessage: 'Enter an Italian license plate (e.g., GG 482 KL for cars or FE 39281 for motorcycles).',
     };
   }
 
-  // Controllo lettere vietate sulle targhe post-1994
   if (/[IOQU]/.test(normalized)) {
     return {
       rawInput,
@@ -133,25 +132,24 @@ export function analyzeItalianPlate(rawInput: string, preferredType?: VehicleTyp
       seriesCode: normalized.slice(0, 2),
       estimatedRegistrationPeriod: '—',
       estimatedYear: null,
-      plateCategory: 'Formato non conforme',
-      validationMessage: 'Le targhe italiane dal 1994 non utilizzano le lettere I, O, Q e U.',
+      plateCategory: 'Invalid format',
+      validationMessage: 'Italian license plates issued since 1994 do not use the letters I, O, Q, or U.',
     };
   }
 
-  // Auto standard / speciale (LL NNN LL)
   if (CAR_REGEX.test(normalized)) {
     const prefix = normalized.slice(0, 2);
-    let plateCategory = 'Autoveicolo (formato UE dal 1994)';
+    let plateCategory = 'Passenger Car (EU format since 1994)';
     let estimated = estimateFromAnchors(prefix, CAR_SERIES_ANCHORS);
 
     if (prefix.startsWith('X')) {
-      plateCategory = 'Rimorchio (serie X dal 2013)';
+      plateCategory = 'Trailer (X series since 2013)';
       estimated = { year: prefix >= 'XB' ? 2025 : 2018, label: prefix >= 'XB' ? '2025–2026' : '2013–2024' };
     } else if (prefix.startsWith('Y')) {
-      plateCategory = 'Polizia Locale (serie Y)';
+      plateCategory = 'Local Police (Y series)';
       estimated = { year: 2016, label: '2009–2026' };
     } else if (prefix.startsWith('Z')) {
-      plateCategory = 'Autoveicolo targa quadrata (serie Z)';
+      plateCategory = 'Square Car Plate (Z series)';
       estimated = { year: prefix >= 'ZB' ? 2016 : 2002, label: prefix >= 'ZB' ? '2010–2026' : '1994–2010' };
     }
 
@@ -168,7 +166,6 @@ export function analyzeItalianPlate(rawInput: string, preferredType?: VehicleTyp
     };
   }
 
-  // Moto / Motoveicolo (LL NNNNN)
   if (MOTO_REGEX.test(normalized)) {
     const prefix = normalized.slice(0, 2);
     const estimated = estimateFromAnchors(prefix, MOTO_SERIES_ANCHORS);
@@ -181,11 +178,10 @@ export function analyzeItalianPlate(rawInput: string, preferredType?: VehicleTyp
       seriesCode: prefix,
       estimatedRegistrationPeriod: estimated.label,
       estimatedYear: estimated.year,
-      plateCategory: 'Motoveicolo (formato UE dal 1999)',
+      plateCategory: 'Motorcycle (EU format since 1999)',
     };
   }
 
-  // Ciclomotore 50cc (6 caratteri)
   if (MOPED_REGEX.test(normalized)) {
     return {
       rawInput,
@@ -196,7 +192,7 @@ export function analyzeItalianPlate(rawInput: string, preferredType?: VehicleTyp
       seriesCode: normalized.slice(0, 2),
       estimatedRegistrationPeriod: '2006–2026',
       estimatedYear: 2018,
-      plateCategory: 'Ciclomotore 50cc (targa a 6 caratteri dal 2006)',
+      plateCategory: '50cc Moped (6-character plate since 2006)',
     };
   }
 
@@ -209,8 +205,8 @@ export function analyzeItalianPlate(rawInput: string, preferredType?: VehicleTyp
     seriesCode: normalized.slice(0, 2),
     estimatedRegistrationPeriod: '—',
     estimatedYear: null,
-    plateCategory: 'Formato non riconosciuto',
+    plateCategory: 'Unrecognized format',
     validationMessage:
-      'Formato non valido. Usa AA 123 BB per auto, AB 12345 per moto oppure 6 caratteri per ciclomotore.',
+      'Invalid format. Use AA 123 BB for cars, AB 12345 for motorcycles, or 6 characters for 50cc mopeds.',
   };
 }

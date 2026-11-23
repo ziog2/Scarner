@@ -1,56 +1,56 @@
-# Architettura di Scarner
+# Scarner Architecture
 
-Scarner è una web application open-source progettata per offrire un'alternativa **gratuita, trasparente e modulare** ai report storici a pagamento per auto e moto (come carVertical), con focus iniziale sul parco circolante italiano.
+Scarner is an open-source web application designed to provide a **free, transparent, and modular alternative** to paid vehicle history report services (such as carVertical) for cars and motorcycles, starting with Italian license plates and structured for multi-country expansion.
 
-## 1. Roadmap in due fasi
+## 1. Two-Phase Roadmap
 
-### Fase 1 — Ricerca manuale da targa (implementata)
-- Inserimento manuale della targa per **Auto** (`AA 123 BB`), **Moto** (`AB 12345`) e **Ciclomotori** (`X12 3AB`).
-- Validazione reale del formato targa italiano (esclusione lettere non ammesse `I, O, Q, U` per le serie post-1994) e stima dell'anno di immatricolazione dalla sequenza alfanumerica.
-- Generazione di un report strutturato su modello carVertical:
-  1. Riepilogo esecutivo e indice di affidabilità
-  2. Storico chilometraggio e revisioni (con rilevazione automatica di *rollback* / anomalie)
-  3. Analisi danni e sinistri con mappa vettoriale del veicolo (auto e moto)
-  4. Copertura assicurativa RCA, controllo furto e stato legale/amministrativo
-  5. Specifiche tecniche, idoneità neopatentati, emissioni CO₂ e stima bollo
-  6. Valutazione di mercato comparata
-  7. Richiami di sicurezza e cronologia unificata (Timeline)
-- Esportazione rapida in PDF One-Pager / stampa tramite CSS `@media print`.
-- Trasparenza sulle fonti: ogni blocco distingue dati verificati, stime locali e collegamenti diretti ai portali pubblici gratuiti italiani.
+### Phase 1 — Manual License Plate Lookup (Implemented)
+- Manual plate input for **Cars** (`AA 123 BB`), **Motorcycles** (`AB 12345`), and **50cc Mopeds** (`X12 3AB`).
+- Real validation of Italian license plate rules (excluding forbidden post-1994 letters `I, O, Q, U`) and chronological registration year estimation from the alphanumeric series.
+- Structured carVertical-inspired vehicle report with 7 core sections:
+  1. Executive overview and Scarner Trust Score (0–100)
+  2. Odometer history and periodic inspections (with automatic rollback detection)
+  3. Accident & damage analysis with dedicated car/motorcycle vector blueprints
+  4. Compulsory insurance (RCA), theft check, and legal/administrative status
+  5. Technical specifications, novice driver eligibility, CO₂ emissions, and estimated annual tax
+  6. Market valuation range
+  7. Safety recalls and unified vehicle timeline
+- Print / Save as One-Page PDF via dedicated `@media print` stylesheet.
+- Source transparency: every section distinguishes verified local analysis, demo/estimated fields, and direct links to official free government portals.
 
-### Fase 2 — Riconoscimento targa da foto o screenshot (in roadmap)
-- Acquisizione immagine via upload file, fotocamera mobile o incolla diretto di screenshot (`Ctrl+V` / Clipboard API).
-- Pipeline modulare in [`src/lib/ocr/plateOcr.ts`](../src/lib/ocr/plateOcr.ts):
-  1. **Pre-processing immagine**: normalizzazione orientamento, contrasto e ritaglio area targa.
-  2. **Estrazione testo (OCR / ALPR)**: supporto pluggable per:
-     - *Client-side gratuito* (`tesseract.js` / ONNX plate detector nel browser, zero costi server e massima privacy).
-     - *Server/API opzionale* (modelli Vision / Plate Recognizer configurabili via variabili d'ambiente).
-  3. **Post-processing italiano**: correzione contestuale delle ambiguità OCR (`0↔O`, `1↔I`, `8↔B`, `5↔S`) in base alla posizione lettera/cifra dello schema italiano (`LL NNN LL` per auto, `LL NNNNN` per moto).
-  4. **Conferma utente** e avvio automatico del report.
+### Phase 2 — Automatic Plate Recognition from Photos & Screenshots (Planned)
+- Image capture via file upload, mobile camera, or clipboard screenshot paste (`Ctrl+V`).
+- Modular pipeline in [`src/lib/ocr/plateOcr.ts`](../src/lib/ocr/plateOcr.ts):
+  1. **Image preprocessing**: orientation normalization, contrast enhancement, and plate region cropping.
+  2. **Text extraction (OCR / ALPR)**: pluggable backend supporting:
+     - *Free client-side OCR* (`tesseract.js` / in-browser ONNX detector — zero server cost, maximum privacy).
+     - *Optional server/API connector* (Vision / ALPR APIs configurable via environment variables).
+  3. **Positional post-processing**: resolves common OCR ambiguities (`0↔O`, `1↔I`, `8↔B`, `5↔S`) using the strict positional letter/digit rules of each plate format (`LL NNN LL` for cars, `LL NNNNN` for motorcycles).
+  4. **User confirmation** and automatic report generation.
 
-## 2. Architettura a Provider Dati (`src/lib/providers/`)
+## 2. Pluggable Data Provider Architecture (`src/lib/providers/`)
 
 ```text
 GET /api/report?plate=GG482KL&type=car
         │
         ▼
-  italianPlate.ts        ──► Validazione, normalizzazione, stima periodo immatricolazione
+  italianPlate.ts        ──► Format validation, normalization, series year estimation
         │
         ▼
-  ProviderRegistry       ──► Interroga in parallelo i provider abilitati
-   ├── DemoVehicleProvider      (dataset di esempio + fallback demo chiaramente marcato)
-   ├── OpenRecallsProvider      (struttura pronta per richiami UE Safety Gate / NHTSA)
-   └── ExternalApiProvider      (connettore opzionale via env per API esterne)
+  ProviderRegistry       ──► Queries enabled providers in priority order
+   ├── ExternalApiProvider      (optional env-configured live API connector)
+   ├── OpenRecallsProvider      (extensible slot for EU Safety Gate / NHTSA recalls)
+   └── DemoVehicleProvider      (curated showcase datasets + clearly labeled demo fallback)
         │
         ▼
-  VehicleReport JSON     ──► Include sempre `sources[]` e `officialChecks[]`
+  VehicleReport JSON     ──► Always includes `sources[]` and `officialLinks[]`
 ```
 
-## 3. Nota importante sulle fonti dati gratuite in Italia
+## 3. Transparency on Free Public Data Sources
 
-I servizi istituzionali italiani gratuiti (es. **Il Portale dell'Automobilista** per ultima revisione/km, copertura RCA e classe ambientale; **Ministero dell'Interno** per ricerca veicoli rubati) sono protetti da CAPTCHA e non espongono API pubbliche aperte senza autenticazione.
+Official free Italian public portals (e.g., **Il Portale dell'Automobilista** for inspection mileage, RCA insurance coverage, and Euro emissions class; **Ministry of the Interior** for stolen vehicle checks) are protected by CAPTCHAs and do not offer open unauthenticated APIs.
 
-Scarner adotta quindi un approccio **eticamente corretto e trasparente**:
-- Non aggira mai CAPTCHA né effettua scraping non autorizzato.
-- Fornisce in ogni report **link diretti ai portali istituzionali gratuiti** per la verifica manuale istantanea di RCA, revisioni, classe ambientale, bollo e furto.
-- Supporta l'innesto di **provider open-data** o **API esterne autorizzate** configurabili tramite `.env.local` implementando l'interfaccia `VehicleDataProvider` in [`src/lib/providers/types.ts`](../src/lib/providers/types.ts).
+Scarner follows an **ethical and transparent design**:
+- It never bypasses CAPTCHAs or performs unauthorized scraping.
+- Every report includes **direct links to official free public portals** with 1-click plate copying so users can verify RCA, inspections, Euro class, tax, and theft status for free.
+- Developers can plug in authorized open-data feeds or external vehicle APIs via `.env.local` by implementing `VehicleDataProvider` in [`src/lib/providers/types.ts`](../src/lib/providers/types.ts).

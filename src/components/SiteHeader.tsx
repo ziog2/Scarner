@@ -9,14 +9,14 @@ export function SiteHeader() {
             SC
           </span>
           <span>Scarner</span>
-          <span className="brand-tag">Gratuito</span>
+          <span className="brand-tag">Free</span>
         </Link>
 
-        <nav className="header-nav" aria-label="Navigazione principale">
-          <Link href="/#come-funziona">Come funziona</Link>
-          <Link href="/report/GG482KL">Report esempio auto</Link>
-          <Link href="/report/FR719MN">Esempio km scalati</Link>
-          <Link href="/report/FE39281">Report esempio moto</Link>
+        <nav className="header-nav" aria-label="Main navigation">
+          <Link href="/#how-it-works">How it works</Link>
+          <Link href="/report/GG482KL">Car Sample</Link>
+          <Link href="/report/FR719MN">Rollback Sample</Link>
+          <Link href="/report/FE39281">Motorcycle Sample</Link>
         </nav>
       </div>
     </header>

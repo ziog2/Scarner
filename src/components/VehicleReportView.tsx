@@ -11,14 +11,14 @@ interface VehicleReportViewProps {
 }
 
 const SEVERITY_LABELS: Record<CheckSeverity, string> = {
-  ok: 'Regolare',
-  warning: 'Attenzione',
-  danger: 'Critico',
+  ok: 'Clear',
+  warning: 'Caution',
+  danger: 'Critical',
   info: 'Info',
 };
 
 function formatCurrency(amount: number): string {
-  return `€${amount.toLocaleString('it-IT')}`;
+  return `€${amount.toLocaleString('en-US')}`;
 }
 
 function getScoreStroke(score: number): string {
@@ -48,7 +48,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 2000);
     } catch {
-      // Clipboard non disponibile
+      // Clipboard unavailable
     }
   }
 
@@ -59,10 +59,10 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         <div>
           <strong>
             {report.dataMode === 'live'
-              ? 'Dati live verificati'
+              ? 'Verified Live Data'
               : report.dataMode === 'demo'
-              ? 'Modalità Report Dimostrativo'
-              : 'Analisi Targa Reale + Scheda Demo'}
+              ? 'Demo Report Mode'
+              : 'Live Plate Analysis + Demo Profile'}
             :{' '}
           </strong>
           {report.dataModeBanner}
@@ -70,11 +70,11 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
       </div>
 
       {/* Report Hero Card */}
-      <section className="report-hero-card" id="panoramica">
+      <section className="report-hero-card" id="overview">
         <div className="report-hero-top">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span className="report-plate-badge" aria-label={`Targa ${report.plate.formatted}`}>
+              <span className="report-plate-badge" aria-label={`License plate ${report.plate.formatted}`}>
                 <span className="report-plate-band">I</span>
                 <span className="report-plate-value">{report.plate.formatted}</span>
               </span>
@@ -88,12 +88,12 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
               {report.specs.make} {report.specs.model} ({report.specs.year})
             </h1>
             <p className="report-vehicle-sub">
-              {report.specs.trim} · {report.specs.fuel} · {report.specs.powerHp} CV ({report.specs.powerKw} kW) ·{' '}
-              {report.specs.euroClass} · Telaio <span className="mono">{report.specs.vinMasked}</span>
+              {report.specs.trim} · {report.specs.fuel} · {report.specs.powerHp} HP ({report.specs.powerKw} kW) ·{' '}
+              {report.specs.euroClass} · VIN <span className="mono">{report.specs.vinMasked}</span>
             </p>
           </div>
 
-          <div className="trust-gauge" aria-label={`Indice di affidabilità ${report.trustScore} su 100`}>
+          <div className="trust-gauge" aria-label={`Scarner trust score ${report.trustScore} out of 100`}>
             <svg width="68" height="68" viewBox="0 0 68 68" style={{ flexShrink: 0 }}>
               <circle cx="34" cy="34" r="28" fill="none" stroke="#E2E6EE" strokeWidth="6" />
               <circle
@@ -121,7 +121,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
               </text>
             </svg>
             <div className="trust-gauge-meta">
-              <span className="trust-gauge-label">Indice Scarner / 100</span>
+              <span className="trust-gauge-label">Scarner Score / 100</span>
               <span className="trust-gauge-verdict">{report.trustVerdict}</span>
             </div>
           </div>
@@ -129,7 +129,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
 
         <div className="report-actions">
           <Link href="/" className="btn-secondary">
-            ← Nuova targa
+            ← New lookup
           </Link>
           <button
             id="btn-copy-plate"
@@ -137,7 +137,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
             className="btn-secondary"
             onClick={() => copyText(report.plate.normalized, 'plate')}
           >
-            {copiedKey === 'plate' ? '✓ Targa copiata' : 'Copia targa'}
+            {copiedKey === 'plate' ? '✓ Plate copied' : 'Copy plate'}
           </button>
           <button
             id="btn-copy-link"
@@ -145,7 +145,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
             className="btn-secondary"
             onClick={() => copyText(window.location.href, 'link')}
           >
-            {copiedKey === 'link' ? '✓ Link copiato' : 'Condividi report'}
+            {copiedKey === 'link' ? '✓ Link copied' : 'Share report'}
           </button>
           <button
             id="btn-print-pdf"
@@ -153,22 +153,22 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
             className="btn-secondary"
             onClick={() => window.print()}
           >
-            Stampa / Salva PDF
+            Print / Save PDF
           </button>
         </div>
       </section>
 
       {/* Sticky Section Anchor Bar */}
-      <nav className="report-nav" aria-label="Sezioni del report">
+      <nav className="report-nav" aria-label="Report sections">
         <div className="report-nav-list">
-          <a href="#panoramica" className="report-nav-link">Panoramica</a>
-          <a href="#chilometraggio" className="report-nav-link">Chilometraggio & Revisioni</a>
-          <a href="#danni" className="report-nav-link">Danni & Sinistri</a>
-          <a href="#furto-rca" className="report-nav-link">Furto, RCA & Legale</a>
-          <a href="#specifiche" className="report-nav-link">Specifiche & Bollo</a>
-          <a href="#valore" className="report-nav-link">Valore di Mercato</a>
-          <a href="#cronologia" className="report-nav-link">Richiami & Cronologia</a>
-          <a href="#fonti-ufficiali" className="report-nav-link">Verifica Ufficiale Gratuita</a>
+          <a href="#overview" className="report-nav-link">Overview</a>
+          <a href="#mileage" className="report-nav-link">Mileage &amp; Inspections</a>
+          <a href="#damage" className="report-nav-link">Accidents &amp; Damage</a>
+          <a href="#theft-legal" className="report-nav-link">Theft, Insurance &amp; Legal</a>
+          <a href="#specs" className="report-nav-link">Specs &amp; Road Tax</a>
+          <a href="#valuation" className="report-nav-link">Market Value</a>
+          <a href="#timeline" className="report-nav-link">Recalls &amp; Timeline</a>
+          <a href="#official-checks" className="report-nav-link">Free Official Checks</a>
         </div>
       </nav>
 
@@ -186,39 +186,39 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         ))}
       </div>
 
-      {/* 1. Chilometraggio & Revisioni */}
-      <section className="report-section" id="chilometraggio">
+      {/* 1. Odometer & Inspections */}
+      <section className="report-section" id="mileage">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Chilometraggio e Revisioni</h2>
+            <h2 className="report-section-title">Odometer History &amp; Inspections</h2>
             <p className="report-section-desc">{report.mileage.summary}</p>
           </div>
           <span className={`status-pill ${report.mileage.hasRollback ? 'danger' : 'ok'}`}>
             {report.mileage.hasRollback
-              ? `Scalatura rilevata (-${report.mileage.rollbackDeltaKm.toLocaleString('it-IT')} km)`
-              : 'Andamento lineare'}
+              ? `Rollback detected (-${report.mileage.rollbackDeltaKm.toLocaleString('en-US')} km)`
+              : 'Linear progression'}
           </span>
         </div>
 
         <div className="metrics-row">
           <div className="metric-box">
-            <div className="metric-label">Ultima lettura registrata</div>
+            <div className="metric-label">Latest recorded reading</div>
             <div className="metric-value mono">
-              {report.mileage.latestKm.toLocaleString('it-IT')} km
+              {report.mileage.latestKm.toLocaleString('en-US')} km
             </div>
           </div>
           <div className="metric-box">
-            <div className="metric-label">Percorrenza media annua</div>
+            <div className="metric-label">Estimated annual average</div>
             <div className="metric-value mono">
-              ~{report.mileage.averageYearlyKm.toLocaleString('it-IT')} km/anno
+              ~{report.mileage.averageYearlyKm.toLocaleString('en-US')} km/yr
             </div>
           </div>
           <div className="metric-box">
-            <div className="metric-label">Anomalie contachilometri</div>
+            <div className="metric-label">Odometer anomalies</div>
             <div className={`metric-value ${report.mileage.hasRollback ? 'danger' : ''}`}>
               {report.mileage.hasRollback
-                ? `-${report.mileage.rollbackDeltaKm.toLocaleString('it-IT')} km`
-                : 'Nessuna'}
+                ? `-${report.mileage.rollbackDeltaKm.toLocaleString('en-US')} km`
+                : 'None'}
             </div>
           </div>
         </div>
@@ -229,10 +229,10 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Data</th>
-                <th>Chilometri</th>
-                <th>Fonte rilevazione</th>
-                <th>Stato</th>
+                <th>Date</th>
+                <th>Mileage</th>
+                <th>Source</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -240,7 +240,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                 <tr key={`${row.date}-${idx}`} className={row.anomaly ? 'row-anomaly' : undefined}>
                   <td className="mono">{row.date}</td>
                   <td className="mono" style={{ fontWeight: 700 }}>
-                    {row.km.toLocaleString('it-IT')} km
+                    {row.km.toLocaleString('en-US')} km
                   </td>
                   <td>
                     {row.source}
@@ -252,7 +252,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                   </td>
                   <td>
                     <span className={`status-pill ${row.anomaly ? 'danger' : 'ok'}`}>
-                      {row.anomaly ? 'Anomalia' : 'Coerente'}
+                      {row.anomaly ? 'Anomaly' : 'Consistent'}
                     </span>
                   </td>
                 </tr>
@@ -264,17 +264,17 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         {report.inspections.length > 0 && (
           <div style={{ marginTop: 20 }}>
             <h3 style={{ margin: '0 0 10px', fontSize: '1rem', fontWeight: 700 }}>
-              Storico revisioni ministeriali
+              Periodic inspection records
             </h3>
             <div className="data-table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Data revisione</th>
-                    <th>Esito</th>
-                    <th>Km rilevati</th>
-                    <th>Area</th>
-                    <th>Fonte</th>
+                    <th>Inspection date</th>
+                    <th>Result</th>
+                    <th>Recorded km</th>
+                    <th>Region</th>
+                    <th>Source</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,14 +284,14 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                       <td>
                         <span
                           className={`status-pill ${
-                            ins.result === 'Regolare' ? 'ok' : ins.result === 'Ripetere' ? 'warning' : 'danger'
+                            ins.result === 'Pass' ? 'ok' : ins.result === 'Retest' ? 'warning' : 'danger'
                           }`}
                         >
                           {ins.result}
                         </span>
                       </td>
                       <td className="mono" style={{ fontWeight: 700 }}>
-                        {ins.km.toLocaleString('it-IT')} km
+                        {ins.km.toLocaleString('en-US')} km
                       </td>
                       <td>{ins.centerRegion}</td>
                       <td style={{ color: 'var(--ink-secondary)' }}>{ins.source}</td>
@@ -304,25 +304,25 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         )}
       </section>
 
-      {/* 2. Danni & Sinistri */}
-      <section className="report-section" id="danni">
+      {/* 2. Accidents & Damage */}
+      <section className="report-section" id="damage">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Analisi Danni e Sinistri</h2>
+            <h2 className="report-section-title">Accident &amp; Damage Analysis</h2>
             <p className="report-section-desc">{report.damages.summary}</p>
           </div>
           <span
             className={`status-pill ${
               report.damages.totalRecords === 0
                 ? 'ok'
-                : report.damages.events.some((e) => e.severity !== 'Lieve')
+                : report.damages.events.some((e) => e.severity !== 'Minor')
                 ? 'danger'
                 : 'warning'
             }`}
           >
             {report.damages.totalRecords === 0
-              ? 'Nessun danno registrato'
-              : `${report.damages.totalRecords} eventi trovati`}
+              ? 'No damage recorded'
+              : `${report.damages.totalRecords} records found`}
           </span>
         </div>
 
@@ -332,11 +332,11 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
           <div className="damage-event-list">
             {report.damages.events.length === 0 ? (
               <div className="info-panel">
-                <h3>Nessun sinistro rilevato</h3>
+                <h3>No accidents found</h3>
                 <p>
-                  Non risultano stime di riparazione o danni strutturali registrati per questo veicolo
-                  nel provider corrente. Si raccomanda comunque sempre un controllo visivo di vernice,
-                  allineamento lamierati e bulloneria.
+                  No repair estimates or structural accident claims were found in the active
+                  provider. A physical inspection of paint thickness, panel gaps, and fasteners is
+                  always recommended before purchase.
                 </p>
               </div>
             ) : (
@@ -349,10 +349,10 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                       </span>
                       <span
                         className={`status-pill ${
-                          event.severity === 'Lieve' ? 'warning' : 'danger'
+                          event.severity === 'Minor' ? 'warning' : 'danger'
                         }`}
                       >
-                        Gravità: {event.severity}
+                        Severity: {event.severity}
                       </span>
                     </div>
                     <span className="damage-cost">
@@ -363,7 +363,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                     {event.description}
                   </p>
                   <div style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
-                    Paese: {event.country} · Fonte: {event.source}
+                    Country: {event.country} · Source: {event.source}
                   </div>
                 </article>
               ))
@@ -372,13 +372,13 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         </div>
       </section>
 
-      {/* 3. Furto, RCA & Stato Legale */}
-      <section className="report-section" id="furto-rca">
+      {/* 3. Theft, Insurance & Legal */}
+      <section className="report-section" id="theft-legal">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Controllo Furto, Assicurazione RCA e Stato Legale</h2>
+            <h2 className="report-section-title">Theft Check, Insurance (RCA) &amp; Legal Status</h2>
             <p className="report-section-desc">
-              Stato di circolazione, precedenti utilizzi commerciali e verifica gravami.
+              Circulation status, previous commercial/fleet use, and lien indicators.
             </p>
           </div>
         </div>
@@ -386,7 +386,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         <div className="two-col-grid">
           <div className="info-panel">
             <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Banca dati veicoli rubati</h3>
+              <h3 style={{ margin: 0 }}>Stolen vehicle registry</h3>
               <span
                 className={`status-pill ${
                   report.theft.status === 'clear'
@@ -397,21 +397,21 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                 }`}
               >
                 {report.theft.status === 'clear'
-                  ? 'Non rubato'
+                  ? 'Clear'
                   : report.theft.status === 'flagged'
-                  ? 'Segnalato'
-                  : 'Verifica diretta'}
+                  ? 'Flagged'
+                  : 'Direct check'}
               </span>
             </div>
             <p style={{ marginBottom: 10 }}>{report.theft.summary}</p>
             <div style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
-              Fonti: {report.theft.databasesChecked.join(' · ')}
+              Sources: {report.theft.databasesChecked.join(' · ')}
             </div>
           </div>
 
           <div className="info-panel">
             <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Copertura assicurativa RCA</h3>
+              <h3 style={{ margin: 0 }}>Compulsory insurance (RCA)</h3>
               <span
                 className={`status-pill ${
                   report.insurance.covered === true
@@ -422,28 +422,28 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                 }`}
               >
                 {report.insurance.covered === true
-                  ? 'Attiva'
+                  ? 'Active'
                   : report.insurance.covered === false
-                  ? 'Non coperta'
-                  : 'Verifica diretta'}
+                  ? 'Uninsured'
+                  : 'Direct check'}
               </span>
             </div>
             <p>{report.insurance.summary}</p>
             {report.insurance.validUntil && (
               <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--ink-muted)', marginTop: 8 }}>
-                Scadenza stimata: {report.insurance.validUntil}
+                Estimated expiry: {report.insurance.validUntil}
               </div>
             )}
           </div>
 
           <div className="info-panel">
             <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Uso precedente e proprietari</h3>
+              <h3 style={{ margin: 0 }}>Previous use &amp; ownership</h3>
               <span
                 className={`status-pill ${
-                  report.legal.previousUse === 'Uso privato'
+                  report.legal.previousUse === 'Private use'
                     ? 'ok'
-                    : report.legal.previousUse === 'Non rilevato'
+                    : report.legal.previousUse === 'Not detected'
                     ? 'info'
                     : 'warning'
                 }`}
@@ -453,87 +453,87 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
             </div>
             <p>{report.legal.summary}</p>
             <div style={{ fontSize: '0.82rem', fontWeight: 600, marginTop: 8 }}>
-              Proprietari stimati: {report.legal.ownersCount}
+              Estimated owners: {report.legal.ownersCount}
             </div>
           </div>
 
           <div className="info-panel">
             <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Fermi amministrativi</h3>
+              <h3 style={{ margin: 0 }}>Administrative liens</h3>
               <span className={`status-pill ${report.legal.administrativeDetention ? 'danger' : 'ok'}`}>
-                {report.legal.administrativeDetention ? 'Presente' : 'Non rilevato'}
+                {report.legal.administrativeDetention ? 'Detected' : 'None detected'}
               </span>
             </div>
             <p>
-              Per avere valore legale certo su ipoteche, pignoramenti e fermi amministrativi prima
-              del passaggio di proprietà è consigliata una visura PRA sul portale ACI.
+              For legally binding verification of liens, seizures, and ownership transfers prior to
+              purchase, request an official PRA report through ACI.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 4. Specifiche Tecniche & Bollo */}
-      <section className="report-section" id="specifiche">
+      {/* 4. Technical Specs & Tax */}
+      <section className="report-section" id="specs">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Specifiche Tecniche, Emissioni e Bollo</h2>
+            <h2 className="report-section-title">Technical Specs, Emissions &amp; Road Tax</h2>
             <p className="report-section-desc">
-              Dati tecnici principali, conformità ambientale e idoneità alla guida per neopatentati.
+              Key powertrain specifications, environmental compliance, and novice driver eligibility.
             </p>
           </div>
         </div>
 
         <div className="specs-grid">
           <div className="spec-cell">
-            <div className="spec-key">Prima immatricolazione (stima serie)</div>
+            <div className="spec-key">First registration (series est.)</div>
             <div className="spec-val mono">
               {report.specs.firstRegistrationDate} ({report.plate.estimatedRegistrationPeriod})
             </div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Motorizzazione</div>
+            <div className="spec-key">Engine &amp; fuel</div>
             <div className="spec-val">
               {report.specs.engineDisplacementCc} cc · {report.specs.fuel}
             </div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Potenza</div>
+            <div className="spec-key">Power output</div>
             <div className="spec-val mono">
-              {report.specs.powerKw} kW / {report.specs.powerHp} CV
+              {report.specs.powerKw} kW / {report.specs.powerHp} HP
             </div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Trasmissione</div>
+            <div className="spec-key">Transmission</div>
             <div className="spec-val">{report.specs.transmission}</div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Classe ambientale</div>
+            <div className="spec-key">Emissions standard</div>
             <div className="spec-val">{report.specs.euroClass}</div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Emissioni CO₂</div>
+            <div className="spec-key">CO₂ emissions</div>
             <div className="spec-val mono">{report.specs.co2GramsPerKm} g/km</div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Idoneo neopatentati</div>
-            <div className="spec-val">{report.specs.noviceDriverAllowed ? 'Sì' : 'No (verifica limiti)'}</div>
+            <div className="spec-key">Novice driver eligible</div>
+            <div className="spec-val">{report.specs.noviceDriverAllowed ? 'Yes' : 'No (check limits)'}</div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Massa a vuoto</div>
+            <div className="spec-key">Curb weight</div>
             <div className="spec-val mono">{report.specs.weightKg} kg</div>
           </div>
           <div className="spec-cell">
-            <div className="spec-key">Stima bollo annuale</div>
-            <div className="spec-val mono">~{formatCurrency(report.specs.estimatedAnnualTaxEur)} / anno</div>
+            <div className="spec-key">Estimated annual tax</div>
+            <div className="spec-val mono">~{formatCurrency(report.specs.estimatedAnnualTaxEur)} / yr</div>
           </div>
         </div>
       </section>
 
-      {/* 5. Valutazione di Mercato */}
-      <section className="report-section" id="valore">
+      {/* 5. Market Valuation */}
+      <section className="report-section" id="valuation">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Valutazione di Mercato</h2>
+            <h2 className="report-section-title">Market Valuation</h2>
             <p className="report-section-desc">{report.marketValue.note}</p>
           </div>
           <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800 }}>
@@ -543,41 +543,41 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
 
         <div className="price-range-box">
           <div style={{ fontSize: '0.84rem', color: 'var(--ink-secondary)' }}>
-            Posizionamento stimato del veicolo rispetto alla fascia media di mercato:
+            Adjusted vehicle estimate relative to typical market pricing:
           </div>
 
           <div className="price-track" aria-hidden="true">
             <div
               className="price-marker"
               style={{ left: `${markerPercent}%` }}
-              title={`Stima rettificata: ${formatCurrency(report.marketValue.adjustedEstimateEur)}`}
+              title={`Adjusted estimate: ${formatCurrency(report.marketValue.adjustedEstimateEur)}`}
             />
           </div>
 
           <div className="price-labels">
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Fascia bassa</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Low range</div>
               <strong className="mono">{formatCurrency(report.marketValue.lowEur)}</strong>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Media mercato</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Market average</div>
               <strong className="mono">{formatCurrency(report.marketValue.averageEur)}</strong>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Fascia alta</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>High range</div>
               <strong className="mono">{formatCurrency(report.marketValue.highEur)}</strong>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 6. Richiami & Cronologia Completa */}
-      <section className="report-section" id="cronologia">
+      {/* 6. Safety Recalls & Unified Timeline */}
+      <section className="report-section" id="timeline">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Richiami di Sicurezza e Cronologia Veicolo</h2>
+            <h2 className="report-section-title">Safety Recalls &amp; Vehicle Timeline</h2>
             <p className="report-section-desc">
-              Sequenza unificata degli eventi noti in ordine cronologico.
+              Unified chronological log of recorded events.
             </p>
           </div>
         </div>
@@ -585,7 +585,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         {report.recalls.length > 0 && (
           <div style={{ marginBottom: 22 }}>
             <h3 style={{ margin: '0 0 10px', fontSize: '0.98rem', fontWeight: 700 }}>
-              Campagne di richiamo costruttore
+              Manufacturer recall campaigns
             </h3>
             <div className="damage-event-list">
               {report.recalls.map((recall) => (
@@ -596,9 +596,9 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                     </span>
                     <span
                       className={`status-pill ${
-                        recall.status === 'Completato'
+                        recall.status === 'Completed'
                           ? 'ok'
-                          : recall.status === 'Da verificare'
+                          : recall.status === 'Check required'
                           ? 'warning'
                           : 'danger'
                       }`}
@@ -608,7 +608,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                   </div>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>{recall.title}</div>
                   <div style={{ fontSize: '0.84rem', color: 'var(--ink-secondary)' }}>
-                    Componente: {recall.component} · {recall.source}
+                    Component: {recall.component} · {recall.source}
                   </div>
                 </div>
               ))}
@@ -626,7 +626,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                 </span>
                 {item.location && <span>· {item.location}</span>}
                 {typeof item.km === 'number' && (
-                  <span className="mono">· {item.km.toLocaleString('it-IT')} km</span>
+                  <span className="mono">· {item.km.toLocaleString('en-US')} km</span>
                 )}
               </div>
               <div style={{ fontWeight: 700, marginBottom: 3 }}>{item.title}</div>
@@ -636,15 +636,15 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         </div>
       </section>
 
-      {/* 7. Fonti Ufficiali Gratuite Italiane & Trasparenza */}
-      <section className="report-section" id="fonti-ufficiali">
+      {/* 7. Free Official Verification Portals & Transparency */}
+      <section className="report-section" id="official-checks">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Verifica Ufficiale Gratuita in Tempo Reale</h2>
+            <h2 className="report-section-title">Free Official Real-Time Verification</h2>
             <p className="report-section-desc">
-              In Italia i portali istituzionali gratuiti richiedono la compilazione diretta con
-              CAPTCHA. Copia la targa <strong className="mono">{report.plate.normalized}</strong> con
-              un clic e apri i servizi ufficiali qui sotto senza pagare alcun intermediario.
+              Official public portals require completing a CAPTCHA directly on the government site.
+              Copy plate <strong className="mono">{report.plate.normalized}</strong> in one click
+              and open the free official checks below without paying a middleman.
             </p>
           </div>
           <button
@@ -652,7 +652,7 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
             className="btn-secondary no-print"
             onClick={() => copyText(report.plate.normalized, 'plate')}
           >
-            {copiedKey === 'plate' ? '✓ Targa copiata' : `Copia ${report.plate.normalized}`}
+            {copiedKey === 'plate' ? '✓ Plate copied' : `Copy ${report.plate.normalized}`}
           </button>
         </div>
 
@@ -670,14 +670,14 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
                 <h3>{link.title}</h3>
                 <p>{link.description}</p>
               </div>
-              <span className="official-link-cta">Apri portale ufficiale gratuito →</span>
+              <span className="official-link-cta">Open free official portal →</span>
             </a>
           ))}
         </div>
 
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
           <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-muted)', marginBottom: 8 }}>
-            Trasparenza provider utilizzati per questo report
+            Data source transparency
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem', color: 'var(--ink-secondary)' }}>
             {report.sources.map((src) => (

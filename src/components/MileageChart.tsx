@@ -13,7 +13,7 @@ export function MileageChart({ readings }: MileageChartProps) {
   if (readings.length === 0) {
     return (
       <div className="chart-container" style={{ textAlign: 'center', color: 'var(--ink-muted)' }}>
-        Nessuna lettura chilometrica disponibile.
+        No odometer readings available.
       </div>
     );
   }
@@ -60,13 +60,13 @@ export function MileageChart({ readings }: MileageChartProps) {
         }}
       >
         <div>
-          <strong className="mono">{selected.reading.km.toLocaleString('it-IT')} km</strong>{' '}
+          <strong className="mono">{selected.reading.km.toLocaleString('en-US')} km</strong>{' '}
           <span style={{ color: 'var(--ink-secondary)' }}>
             · {selected.reading.date} · {selected.reading.source}
           </span>
         </div>
         {selected.reading.anomaly && (
-          <span className="status-pill danger">Anomalia / Scalatura rilevata</span>
+          <span className="status-pill danger">Rollback / Anomaly Detected</span>
         )}
       </div>
 
@@ -74,9 +74,8 @@ export function MileageChart({ readings }: MileageChartProps) {
         viewBox={`0 0 ${width} ${height}`}
         style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}
         role="img"
-        aria-label="Grafico cronologico delle letture chilometriche"
+        aria-label="Chronological odometer readings chart"
       >
-        {/* Horizontal gridlines */}
         {yTicks.map((tick) => (
           <g key={tick.km}>
             <line
@@ -101,7 +100,6 @@ export function MileageChart({ readings }: MileageChartProps) {
           </g>
         ))}
 
-        {/* Segments (highlight rollback in crimson dashed) */}
         {points.slice(0, -1).map((pt, idx) => {
           const next = points[idx + 1];
           const isDrop = next.reading.km < pt.reading.km || Boolean(next.reading.anomaly);
@@ -120,7 +118,6 @@ export function MileageChart({ readings }: MileageChartProps) {
           );
         })}
 
-        {/* Points & X-axis labels */}
         {points.map((pt) => {
           const isSelected = pt.index === selected.index;
           const isAnomaly = Boolean(pt.reading.anomaly);

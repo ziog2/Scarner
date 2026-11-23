@@ -10,15 +10,15 @@ export default function HomePage() {
         <section className="hero">
           <div className="container hero-grid">
             <div>
-              <p className="hero-eyebrow">Alternativa gratuita e open-source</p>
+              <p className="hero-eyebrow">Free &amp; open-source alternative</p>
               <h1 className="hero-title">
-                Controlla la storia di auto e moto dalla targa, gratis.
+                Check car and motorcycle history by license plate, for free.
               </h1>
               <p className="hero-subtitle">
-                Scarner nasce per offrire un report strutturato, chiaro e gratuito come alternativa
-                ai costosi servizi a pagamento: analisi formato targa e anno di immatricolazione,
-                chilometraggio e revisioni, mappa danni, stato RCA e collegamenti diretti alle
-                banche dati ufficiali italiane.
+                Scarner is built as a transparent, zero-cost alternative to paid vehicle report
+                platforms: real plate format validation and registration year estimation, odometer
+                rollback charts, car &amp; motorcycle damage blueprints, and direct links to
+                official public verification portals.
               </p>
 
               <ul className="hero-points">
@@ -27,8 +27,8 @@ export default function HomePage() {
                     ✓
                   </span>
                   <span>
-                    <strong>Auto, moto e 50cc</strong> con riconoscimento automatico del formato
-                    targa italiano
+                    <strong>Cars, motorcycles &amp; 50cc mopeds</strong> with automatic plate format
+                    detection
                   </span>
                 </li>
                 <li>
@@ -36,7 +36,7 @@ export default function HomePage() {
                     ✓
                   </span>
                   <span>
-                    <strong>Rilevazione km scalati</strong> con grafico cronologico e revisioni
+                    <strong>Odometer rollback detection</strong> with chronological inspection chart
                   </span>
                 </li>
                 <li>
@@ -44,7 +44,8 @@ export default function HomePage() {
                     ✓
                   </span>
                   <span>
-                    <strong>Mappa danni auto e moto</strong>, specifiche tecniche, CO₂ e bollo
+                    <strong>Car &amp; motorcycle damage blueprints</strong>, technical specs, CO₂
+                    and road tax
                   </span>
                 </li>
                 <li>
@@ -52,8 +53,8 @@ export default function HomePage() {
                     ✓
                   </span>
                   <span>
-                    <strong>Esportazione PDF One-Pager</strong> e accesso rapido ai portali MIT /
-                    Polizia / ACI
+                    <strong>One-Page PDF export</strong> and 1-click access to free official public
+                    registries
                   </span>
                 </li>
               </ul>
@@ -63,40 +64,39 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="section-block" id="come-funziona">
+        <section className="section-block" id="how-it-works">
           <div className="container">
-            <h2 className="section-heading">Roadmap del progetto: dalla targa alla foto</h2>
+            <h2 className="section-heading">Project roadmap: from manual plate to photo scan</h2>
             <p className="section-lead">
-              Scarner è sviluppato in modo modulare per essere utile fin dal primo giorno e facile
-              da estendere con fonti dati open-data e riconoscimento ottico delle targhe.
+              Scarner is engineered modularly so it is useful from day one and straightforward to
+              extend with live open-data connectors and automated license plate OCR.
             </p>
 
             <div className="feature-grid">
               <article className="feature-card">
-                <div className="feature-step">FASE 1 · ATTIVA</div>
-                <h3>Inserimento manuale Auto e Moto</h3>
+                <div className="feature-step">PHASE 1 · LIVE</div>
+                <h3>Manual Plate Lookup (Cars &amp; Motorcycles)</h3>
                 <p>
-                  Validazione reale delle targhe italiane (auto, motocicli e ciclomotori), stima
-                  dell’anno dalla sequenza alfanumerica e report completo stampabile in PDF.
+                  Real Italian license plate validation for cars, motorcycles, and 50cc mopeds,
+                  chronological registration year estimation, and printable PDF reports.
                 </p>
               </article>
 
               <article className="feature-card">
-                <div className="feature-step">FASE 2 · IN ARRIVO</div>
-                <h3>Scansione da Foto o Screenshot</h3>
+                <div className="feature-step">PHASE 2 · NEXT</div>
+                <h3>Photo &amp; Screenshot OCR Scanning</h3>
                 <p>
-                  Carica una foto o incolla lo screenshot di un annuncio: la pipeline OCR/ALPR
-                  estrae la targa automaticamente correggendo ambiguità tra lettere e cifre.
+                  Upload a street photo or paste a listing screenshot: an OCR/ALPR pipeline extracts
+                  the license plate automatically while resolving character/digit ambiguities.
                 </p>
               </article>
 
               <article className="feature-card">
-                <div className="feature-step">ARCHITETTURA APERTA</div>
-                <h3>Provider modulari e trasparenti</h3>
+                <div className="feature-step">OPEN ARCHITECTURE</div>
+                <h3>Modular &amp; Transparent Data Providers</h3>
                 <p>
-                  Ogni sezione mostra l’origine del dato. Oltre ai connettori API estensibili,
-                  Scarner integra collegamenti diretti alle verifiche ufficiali gratuite di MIT,
-                  Ministero dell’Interno e ACI.
+                  Every section clearly discloses data provenance. Alongside extensible API
+                  connectors, Scarner links directly to free official public checks without paywalls.
                 </p>
               </article>
             </div>
@@ -107,9 +107,9 @@ export default function HomePage() {
       <footer className="site-footer">
         <div className="container site-footer-inner">
           <div>
-            <strong>Scarner</strong> — Progetto open-source per report veicoli gratuiti.
+            <strong>Scarner</strong> — Open-source free vehicle history reports.
           </div>
-          <div>Nessun abbonamento · Nessun paywall · Dati trasparenti</div>
+          <div>No subscriptions · No paywalls · Transparent data sources</div>
         </div>
       </footer>
     </>

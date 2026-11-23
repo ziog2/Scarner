@@ -4,8 +4,7 @@ import { VehicleDataProvider } from '@/lib/providers/types';
 import { PlateAnalysis, VehicleReport, VehicleType } from '@/types/report';
 
 const providers: VehicleDataProvider[] = [
-  // Aggiungi qui eventuali provider live (es. API open-data o connettori esterni configurati via env)
-  // prima del DemoVehicleProvider, così verranno usati automaticamente con priorità maggiore.
+  // Register live API / open-data providers before DemoVehicleProvider so they take priority automatically.
   new DemoVehicleProvider(),
 ];
 
@@ -22,7 +21,7 @@ export async function generateVehicleReport(
   if (!plate.isValid) {
     return {
       ok: false,
-      error: plate.validationMessage ?? 'Targa non valida.',
+      error: plate.validationMessage ?? 'Invalid license plate.',
       plate,
     };
   }
@@ -42,7 +41,7 @@ export async function generateVehicleReport(
 
   return {
     ok: false,
-    error: 'Nessun provider dati disponibile al momento.',
+    error: 'No vehicle data providers are currently available.',
     plate,
   };
 }

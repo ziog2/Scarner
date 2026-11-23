@@ -15,14 +15,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Scarner — Report gratuito per auto e moto dalla targa',
+  title: 'Scarner — Free Car & Motorcycle History Reports by License Plate',
   description:
-    'Alternativa gratuita e trasparente ai report storici per auto e moto: verifica chilometraggio, revisioni, danni, classe ambientale, RCA e collegamenti ai portali ufficiali italiani.',
+    'Free, open-source alternative to paid vehicle history reports: check mileage history, inspections, damage blueprints, Euro class, insurance, and official public registries.',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="it" className={`${jakartaSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${jakartaSans.variable} ${jetbrainsMono.variable}`}>
       <body>{children}</body>
     </html>
   );

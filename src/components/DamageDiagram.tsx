@@ -12,7 +12,7 @@ function getZoneSeverity(
   let state: 'none' | 'mild' | 'severe' = 'none';
   for (const event of events) {
     if (!event.zones.includes(zone)) continue;
-    if (event.severity === 'Grave' || event.severity === 'Moderato') {
+    if (event.severity === 'Severe' || event.severity === 'Moderate') {
       return 'severe';
     }
     state = 'mild';
@@ -47,7 +47,7 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
           marginBottom: 10,
         }}
       >
-        {isTwoWheels ? 'Mappa zone moto' : 'Mappa zone carrozzeria'}
+        {isTwoWheels ? 'Motorcycle Zone Blueprint' : 'Car Body Zone Blueprint'}
       </div>
 
       {isTwoWheels ? (
@@ -55,9 +55,8 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
           viewBox="0 0 280 175"
           style={{ width: '100%', maxWidth: 280, height: 'auto' }}
           role="img"
-          aria-label="Diagramma zone danneggiate motociclo"
+          aria-label="Motorcycle damage zone diagram"
         >
-          {/* Rear wheel */}
           <circle
             cx="64"
             cy="126"
@@ -68,7 +67,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
           />
           <circle cx="64" cy="126" r="14" fill="none" stroke="#8C97AB" strokeWidth="1.5" />
 
-          {/* Front wheel */}
           <circle
             cx="216"
             cy="126"
@@ -79,7 +77,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
           />
           <circle cx="216" cy="126" r="14" fill="none" stroke="#8C97AB" strokeWidth="1.5" />
 
-          {/* Exhaust */}
           <path
             d="M54 114 L122 126 L122 138 L50 128 Z"
             fill={zoneFill(getZoneSeverity('exhaust', events))}
@@ -87,7 +84,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             strokeWidth="2.2"
           />
 
-          {/* Tank & frame */}
           <path
             d="M84 86 L154 70 L182 88 L152 120 L92 114 Z"
             fill={zoneFill(getZoneSeverity('tank-frame', events))}
@@ -95,7 +91,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             strokeWidth="2.2"
           />
 
-          {/* Front fairing & fork */}
           <path
             d="M168 54 L208 62 L218 118 L194 118 L180 86 Z"
             fill={zoneFill(getZoneSeverity('fairing', events))}
@@ -103,15 +98,14 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             strokeWidth="2.2"
           />
 
-          {/* Labels */}
           <text x="64" y="170" textAnchor="middle" fontSize="10" fill="#5D677B">
-            Posteriore
+            Rear
           </text>
           <text x="142" y="170" textAnchor="middle" fontSize="10" fill="#5D677B">
-            Telaio / Scarico
+            Frame / Exhaust
           </text>
           <text x="216" y="170" textAnchor="middle" fontSize="10" fill="#5D677B">
-            Anteriore
+            Front
           </text>
         </svg>
       ) : (
@@ -119,16 +113,14 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
           viewBox="0 0 220 330"
           style={{ width: '100%', maxWidth: 210, height: 'auto' }}
           role="img"
-          aria-label="Diagramma zone danneggiate autoveicolo"
+          aria-label="Car body damage zone diagram"
         >
-          {/* Front bumper / hood */}
           <path
             d="M64 26 Q110 10 156 26 L164 82 L56 82 Z"
             fill={zoneFill(getZoneSeverity('front', events))}
             stroke={zoneStroke(getZoneSeverity('front', events))}
             strokeWidth="2.2"
           />
-          {/* Left-front fender & door */}
           <rect
             x="38"
             y="84"
@@ -139,7 +131,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             stroke={zoneStroke(getZoneSeverity('left-front', events))}
             strokeWidth="2.2"
           />
-          {/* Right-front fender & door */}
           <rect
             x="154"
             y="84"
@@ -150,7 +141,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             stroke={zoneStroke(getZoneSeverity('right-front', events))}
             strokeWidth="2.2"
           />
-          {/* Roof / cabin */}
           <rect
             x="70"
             y="92"
@@ -161,7 +151,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             stroke={zoneStroke(getZoneSeverity('roof', events))}
             strokeWidth="2.2"
           />
-          {/* Left-rear quarter */}
           <rect
             x="38"
             y="170"
@@ -172,7 +161,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             stroke={zoneStroke(getZoneSeverity('left-rear', events))}
             strokeWidth="2.2"
           />
-          {/* Right-rear quarter */}
           <rect
             x="154"
             y="170"
@@ -183,7 +171,6 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
             stroke={zoneStroke(getZoneSeverity('right-rear', events))}
             strokeWidth="2.2"
           />
-          {/* Rear bumper / trunk */}
           <path
             d="M56 254 L164 254 L156 302 Q110 314 64 302 Z"
             fill={zoneFill(getZoneSeverity('rear', events))}
@@ -192,19 +179,19 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
           />
 
           <text x="110" y="58" textAnchor="middle" fontSize="10" fill="#5D677B" fontWeight="600">
-            ANT
+            FRONT
           </text>
           <text x="110" y="166" textAnchor="middle" fontSize="10" fill="#5D677B" fontWeight="600">
-            TETTO
+            ROOF
           </text>
           <text x="110" y="286" textAnchor="middle" fontSize="10" fill="#5D677B" fontWeight="600">
-            POST
+            REAR
           </text>
           <text x="20" y="168" textAnchor="middle" fontSize="10" fill="#5D677B" fontWeight="600">
-            SX
+            L
           </text>
           <text x="200" y="168" textAnchor="middle" fontSize="10" fill="#5D677B" fontWeight="600">
-            DX
+            R
           </text>
         </svg>
       )}
@@ -222,15 +209,15 @@ export function DamageDiagram({ vehicleType, events }: DamageDiagramProps) {
       >
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 10, height: 10, borderRadius: 3, background: '#E5E9F0', border: '1px solid #B8C1D1' }} />
-          Integra
+          Intact
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 10, height: 10, borderRadius: 3, background: 'rgba(186,114,14,0.35)', border: '1px solid #B8720E' }} />
-          Lieve
+          Minor
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 10, height: 10, borderRadius: 3, background: 'rgba(198,40,57,0.32)', border: '1px solid #C62839' }} />
-          Moderato / Grave
+          Moderate / Severe
         </span>
       </div>
     </div>

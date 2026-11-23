@@ -35,7 +35,7 @@ export interface MileageReading {
 
 export interface InspectionRecord {
   date: string;
-  result: 'Regolare' | 'Ripetere' | 'Sospeso';
+  result: 'Pass' | 'Retest' | 'Suspended';
   km: number;
   centerRegion: string;
   source: string;
@@ -62,7 +62,7 @@ export type DamageZoneId = CarDamageZone | MotoDamageZone;
 export interface DamageEvent {
   id: string;
   date: string;
-  severity: 'Lieve' | 'Moderato' | 'Grave';
+  severity: 'Minor' | 'Moderate' | 'Severe';
   estimatedCostMinEur: number;
   estimatedCostMaxEur: number;
   zones: DamageZoneId[];
@@ -86,8 +86,8 @@ export interface InsuranceStatus {
 }
 
 export interface LegalStatus {
-  administrativeDetention: boolean; // Fermo amministrativo
-  previousUse: 'Uso privato' | 'Noleggio / Flotta' | 'Taxi / NCC' | 'Non rilevato';
+  administrativeDetention: boolean;
+  previousUse: 'Private use' | 'Rental / Fleet' | 'Taxi / Rideshare' | 'Not detected';
   ownersCount: number;
   importCountry?: string;
   summary: string;
@@ -127,7 +127,7 @@ export interface SafetyRecall {
   date: string;
   title: string;
   component: string;
-  status: 'Completato' | 'Da verificare' | 'Aperto';
+  status: 'Completed' | 'Check required' | 'Open';
   source: string;
 }
 
