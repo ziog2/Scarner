@@ -73,7 +73,8 @@ src/
 └── types/
     └── report.ts                   # Core TypeScript domain models
 docs/
-└── ARCHITECTURE.md                 # System architecture & Phase 1 → Phase 2 roadmap
+├── ARCHITECTURE.md                 # System architecture & Phase 1 → Phase 2 roadmap
+└── EUROPEAN_FREE_DATA_SOURCES.md   # Catalog of free European plate & VIN data sources
 ```
 
 ## Phase 2 Roadmap (Photo & Screenshot OCR)
