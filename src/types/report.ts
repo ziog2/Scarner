@@ -1,8 +1,33 @@
-export type VehicleType = 'car' | 'motorcycle' | 'moped';
+export type VehicleType = 'car' | 'motorcycle' | 'moped' | 'commercial' | 'unknown';
 
-export type CheckSeverity = 'ok' | 'warning' | 'danger' | 'info';
+export type LookupKind = 'plate' | 'vin';
 
-export type DataOriginMode = 'demo' | 'estimated' | 'live';
+export type EuropeanCountryCode =
+  | 'EU'
+  | 'NL'
+  | 'IT'
+  | 'GB'
+  | 'NO'
+  | 'CZ'
+  | 'PL'
+  | 'FR'
+  | 'DE'
+  | 'ES'
+  | 'DK'
+  | 'SE'
+  | 'FI'
+  | 'EE'
+  | 'LV'
+  | 'LT'
+  | 'BE'
+  | 'HU'
+  | 'SK'
+  | 'RO'
+  | 'IE';
+
+export type CheckSeverity = 'ok' | 'warning' | 'danger' | 'info' | 'unavailable';
+
+export type DataCoverageMode = 'live_api' | 'partial_live' | 'portal_only';
 
 export interface PlateAnalysis {
   rawInput: string;
@@ -17,8 +42,21 @@ export interface PlateAnalysis {
   validationMessage?: string;
 }
 
+export interface QuerySummary {
+  kind: LookupKind;
+  rawInput: string;
+  normalized: string;
+  formatted: string;
+  country: EuropeanCountryCode;
+  countryName: string;
+  vehicleType: VehicleType;
+  categoryLabel: string;
+  seriesOrWmi: string | null;
+  estimatedPeriod: string | null;
+}
+
 export interface QuickCheckItem {
-  id: 'mileage' | 'damage' | 'theft' | 'insurance' | 'inspections' | 'recalls';
+  id: 'mileage' | 'inspections' | 'recalls' | 'insurance' | 'theft' | 'status';
   label: string;
   value: string;
   detail: string;
@@ -26,7 +64,7 @@ export interface QuickCheckItem {
 }
 
 export interface MileageReading {
-  date: string; // YYYY-MM-DD
+  date: string;
   km: number;
   source: string;
   anomaly?: boolean;
@@ -35,160 +73,112 @@ export interface MileageReading {
 
 export interface InspectionRecord {
   date: string;
-  result: 'Pass' | 'Retest' | 'Suspended';
-  km: number;
-  centerRegion: string;
+  result: string;
+  expiryDate?: string | null;
+  km?: number | null;
+  defectsCount?: number;
+  notes?: string[];
   source: string;
 }
 
-export type CarDamageZone =
-  | 'front'
-  | 'rear'
-  | 'left-front'
-  | 'left-rear'
-  | 'right-front'
-  | 'right-rear'
-  | 'roof';
-
-export type MotoDamageZone =
-  | 'front-wheel'
-  | 'fairing'
-  | 'tank-frame'
-  | 'exhaust'
-  | 'rear-wheel';
-
-export type DamageZoneId = CarDamageZone | MotoDamageZone;
-
-export interface DamageEvent {
-  id: string;
+export interface OwnershipEvent {
   date: string;
-  severity: 'Minor' | 'Moderate' | 'Severe';
-  estimatedCostMinEur: number;
-  estimatedCostMaxEur: number;
-  zones: DamageZoneId[];
   description: string;
-  country: string;
   source: string;
-}
-
-export interface TheftCheck {
-  status: 'clear' | 'flagged' | 'unverified';
-  databasesChecked: string[];
-  lastCheckedAt: string;
-  summary: string;
-}
-
-export interface InsuranceStatus {
-  covered: boolean | null;
-  company?: string;
-  validUntil?: string;
-  summary: string;
-}
-
-export interface LegalStatus {
-  administrativeDetention: boolean;
-  previousUse: 'Private use' | 'Rental / Fleet' | 'Taxi / Rideshare' | 'Not detected';
-  ownersCount: number;
-  importCountry?: string;
-  summary: string;
 }
 
 export interface VehicleSpecs {
-  make: string;
-  model: string;
-  trim: string;
-  year: number;
-  firstRegistrationDate: string;
-  vinMasked: string;
-  fuel: string;
-  transmission: string;
-  engineDisplacementCc: number;
-  powerKw: number;
-  powerHp: number;
-  euroClass: string;
-  co2GramsPerKm: number;
-  color: string;
-  weightKg: number;
-  noviceDriverAllowed: boolean;
-  estimatedAnnualTaxEur: number;
-}
-
-export interface MarketValuation {
-  currency: 'EUR';
-  lowEur: number;
-  averageEur: number;
-  highEur: number;
-  adjustedEstimateEur: number;
-  note: string;
+  make: string | null;
+  model: string | null;
+  variant: string | null;
+  bodyStyle: string | null;
+  modelYear: number | null;
+  firstRegistrationDate: string | null;
+  manufacturingCountry: string | null;
+  vin: string | null;
+  fuel: string | null;
+  engineDisplacementCc: number | null;
+  cylinders: number | null;
+  powerKw: number | null;
+  powerHp: number | null;
+  euroClass: string | null;
+  co2GramsPerKm: number | null;
+  color: string | null;
+  curbWeightKg: number | null;
+  catalogPriceEur: number | null;
+  seats: number | null;
 }
 
 export interface SafetyRecall {
   id: string;
-  date: string;
-  title: string;
+  date: string | null;
   component: string;
-  status: 'Completed' | 'Check required' | 'Open';
+  summary: string;
+  remedy?: string | null;
+  status: 'Open flag' | 'Campaign notice' | 'Check with dealer';
   source: string;
 }
 
-export interface TimelineEvent {
-  id: string;
-  date: string;
-  category: 'registration' | 'inspection' | 'damage' | 'ownership' | 'recall' | 'listing';
-  title: string;
-  detail: string;
-  location?: string;
-  km?: number;
-  severity: CheckSeverity;
+export interface StatusFlags {
+  insured: boolean | null;
+  openRecallFlag: boolean | null;
+  taxiUse: boolean | null;
+  exported: boolean | null;
+  stolenStatus: 'clear' | 'flagged' | 'unverified';
+  notes: string[];
 }
 
-export interface OfficialCheckLink {
+export interface OfficialPortalLink {
   id: string;
+  country: EuropeanCountryCode;
   title: string;
   authority: string;
   description: string;
+  lookupBy: 'Plate' | 'VIN' | 'Plate or VIN' | 'Make & Model' | 'Owner Code';
   url: string;
-  freeOfficial: true;
+  accessNote: string;
 }
 
-export interface DataSourceInfo {
+export interface DataSourceTrace {
   providerId: string;
   label: string;
-  mode: DataOriginMode;
-  note: string;
+  status: 'success' | 'not_configured' | 'no_match' | 'error';
+  detail: string;
 }
 
 export interface VehicleReport {
   reportId: string;
   generatedAt: string;
-  dataMode: DataOriginMode;
-  dataModeBanner: string;
-  plate: PlateAnalysis;
-  vehicleType: VehicleType;
-  trustScore: number; // 0-100
-  trustVerdict: string;
+  coverageMode: DataCoverageMode;
+  coverageNotice: string;
+  query: QuerySummary;
   specs: VehicleSpecs;
   quickChecks: QuickCheckItem[];
   mileage: {
+    available: boolean;
     hasRollback: boolean;
     rollbackDeltaKm: number;
-    averageYearlyKm: number;
-    latestKm: number;
+    latestKm: number | null;
     summary: string;
     readings: MileageReading[];
   };
-  inspections: InspectionRecord[];
-  damages: {
-    totalRecords: number;
+  inspections: {
+    available: boolean;
+    nextDueDate: string | null;
     summary: string;
-    events: DamageEvent[];
+    records: InspectionRecord[];
   };
-  theft: TheftCheck;
-  insurance: InsuranceStatus;
-  legal: LegalStatus;
-  marketValue: MarketValuation;
-  recalls: SafetyRecall[];
-  timeline: TimelineEvent[];
-  sources: DataSourceInfo[];
-  officialLinks: OfficialCheckLink[];
+  ownership: {
+    available: boolean;
+    summary: string;
+    events: OwnershipEvent[];
+  };
+  flags: StatusFlags;
+  recalls: {
+    available: boolean;
+    summary: string;
+    items: SafetyRecall[];
+  };
+  sources: DataSourceTrace[];
+  officialPortals: OfficialPortalLink[];
 }

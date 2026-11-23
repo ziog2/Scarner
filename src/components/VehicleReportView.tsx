@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { DamageDiagram } from '@/components/DamageDiagram';
 import { MileageChart } from '@/components/MileageChart';
 import { CheckSeverity, VehicleReport } from '@/types/report';
 
@@ -11,38 +10,21 @@ interface VehicleReportViewProps {
 }
 
 const SEVERITY_LABELS: Record<CheckSeverity, string> = {
-  ok: 'Clear',
+  ok: 'Verified',
   warning: 'Caution',
-  danger: 'Critical',
+  danger: 'Alert',
   info: 'Info',
+  unavailable: 'Portal Only',
 };
 
 function formatCurrency(amount: number): string {
   return `€${amount.toLocaleString('en-US')}`;
 }
 
-function getScoreStroke(score: number): string {
-  if (score >= 80) return '#197A4B';
-  if (score >= 60) return '#B8720E';
-  return '#C62839';
-}
-
 export function VehicleReportView({ report }: VehicleReportViewProps) {
-  const [copiedKey, setCopiedKey] = useState<'plate' | 'link' | null>(null);
+  const [copiedKey, setCopiedKey] = useState<'query' | 'link' | null>(null);
 
-  const circumference = 2 * Math.PI * 28;
-  const strokeDashoffset = circumference - (report.trustScore / 100) * circumference;
-
-  const priceSpan = Math.max(1, report.marketValue.highEur - report.marketValue.lowEur);
-  const markerPercent = Math.min(
-    96,
-    Math.max(
-      4,
-      ((report.marketValue.adjustedEstimateEur - report.marketValue.lowEur) / priceSpan) * 100
-    )
-  );
-
-  async function copyText(text: string, key: 'plate' | 'link') {
+  async function copyText(text: string, key: 'query' | 'link') {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
@@ -52,77 +34,95 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
     }
   }
 
+  const titleParts = [report.specs.make, report.specs.model].filter(Boolean);
+  const headingTitle =
+    titleParts.length > 0
+      ? `${titleParts.join(' ')}${report.specs.modelYear ? ` (${report.specs.modelYear})` : ''}`
+      : `${report.query.countryName} ${report.query.kind === 'vin' ? 'VIN' : 'Plate'} ${report.query.formatted}`;
+
+  const specRows: [string, string | null][] = [
+    ['Make', report.specs.make],
+    ['Model', report.specs.model],
+    ['Variant / Category', report.specs.variant ?? report.query.categoryLabel],
+    ['Body Style', report.specs.bodyStyle],
+    ['Model Year', report.specs.modelYear ? String(report.specs.modelYear) : null],
+    ['First Registration', report.specs.firstRegistrationDate],
+    ['Manufacturing Country', report.specs.manufacturingCountry],
+    ['VIN', report.specs.vin],
+    ['Fuel Type', report.specs.fuel],
+    ['Engine Displacement', report.specs.engineDisplacementCc ? `${report.specs.engineDisplacementCc} cc` : null],
+    ['Cylinders', report.specs.cylinders ? String(report.specs.cylinders) : null],
+    [
+      'Power Output',
+      report.specs.powerKw || report.specs.powerHp
+        ? `${report.specs.powerKw ?? '—'} kW / ${report.specs.powerHp ?? '—'} HP`
+        : null,
+    ],
+    ['Emissions Standard', report.specs.euroClass],
+    ['CO₂ Emissions', report.specs.co2GramsPerKm ? `${report.specs.co2GramsPerKm} g/km` : null],
+    ['Color', report.specs.color],
+    ['Curb Weight', report.specs.curbWeightKg ? `${report.specs.curbWeightKg} kg` : null],
+    ['Catalog Price (New)', report.specs.catalogPriceEur ? formatCurrency(report.specs.catalogPriceEur) : null],
+    ['Seats', report.specs.seats ? String(report.specs.seats) : null],
+  ];
+
+  const populatedSpecs = specRows.filter(([, val]) => Boolean(val));
+
   return (
     <div className="container report-shell">
-      {/* Transparent Data Mode Banner */}
+      {/* Live Data Coverage Notice */}
       <div className="report-banner" role="note">
         <div>
           <strong>
-            {report.dataMode === 'live'
-              ? 'Verified Live Data'
-              : report.dataMode === 'demo'
-              ? 'Demo Report Mode'
-              : 'Live Plate Analysis + Demo Profile'}
+            {report.coverageMode === 'live_api'
+              ? 'Live Open Government Data'
+              : report.coverageMode === 'partial_live'
+              ? 'Live Open VIN & Recall Data'
+              : 'No Keyless Open API in This Country (Zero Fake Data)'}
             :{' '}
           </strong>
-          {report.dataModeBanner}
+          {report.coverageNotice}
         </div>
       </div>
 
-      {/* Report Hero Card */}
+      {/* Report Hero */}
       <section className="report-hero-card" id="overview">
         <div className="report-hero-top">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span className="report-plate-badge" aria-label={`License plate ${report.plate.formatted}`}>
-                <span className="report-plate-band">I</span>
-                <span className="report-plate-value">{report.plate.formatted}</span>
+              <span className="report-plate-badge">
+                <span className="report-plate-band">
+                  {report.query.kind === 'vin' ? 'VIN' : report.query.country}
+                </span>
+                <span className="report-plate-value">{report.query.formatted}</span>
               </span>
-              <span className="status-pill info">{report.plate.plateCategory}</span>
+              <span className="status-pill info">{report.query.countryName}</span>
               <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
-                ID: {report.reportId}
+                {report.reportId}
               </span>
             </div>
 
-            <h1 className="report-vehicle-title">
-              {report.specs.make} {report.specs.model} ({report.specs.year})
-            </h1>
+            <h1 className="report-vehicle-title">{headingTitle}</h1>
             <p className="report-vehicle-sub">
-              {report.specs.trim} · {report.specs.fuel} · {report.specs.powerHp} HP ({report.specs.powerKw} kW) ·{' '}
-              {report.specs.euroClass} · VIN <span className="mono">{report.specs.vinMasked}</span>
+              {report.query.categoryLabel}
+              {report.query.seriesOrWmi ? ` · ${report.query.kind === 'vin' ? 'WMI' : 'Series'} ${report.query.seriesOrWmi}` : ''}
+              {report.query.estimatedPeriod ? ` · ${report.query.estimatedPeriod}` : ''}
             </p>
           </div>
 
-          <div className="trust-gauge" aria-label={`Scarner trust score ${report.trustScore} out of 100`}>
-            <svg width="68" height="68" viewBox="0 0 68 68" style={{ flexShrink: 0 }}>
-              <circle cx="34" cy="34" r="28" fill="none" stroke="#E2E6EE" strokeWidth="6" />
-              <circle
-                cx="34"
-                cy="34"
-                r="28"
-                fill="none"
-                stroke={getScoreStroke(report.trustScore)}
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                transform="rotate(-90 34 34)"
-              />
-              <text
-                x="34"
-                y="38"
-                textAnchor="middle"
-                fontSize="16"
-                fontWeight="800"
-                fill="#151B28"
-                fontFamily="var(--font-mono), monospace"
-              >
-                {report.trustScore}
-              </text>
-            </svg>
+          <div className="trust-gauge">
             <div className="trust-gauge-meta">
-              <span className="trust-gauge-label">Scarner Score / 100</span>
-              <span className="trust-gauge-verdict">{report.trustVerdict}</span>
+              <span className="trust-gauge-label">Data Provenance</span>
+              <span className="trust-gauge-verdict">
+                {report.coverageMode === 'live_api'
+                  ? '100% Live Government API'
+                  : report.coverageMode === 'partial_live'
+                  ? 'Live VIN / Recall API + EU Portals'
+                  : 'Real Validation + Free Official Portals'}
+              </span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
+                Zero simulated or estimated mileage
+              </span>
             </div>
           </div>
         </div>
@@ -132,12 +132,14 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
             ← New lookup
           </Link>
           <button
-            id="btn-copy-plate"
+            id="btn-copy-query"
             type="button"
             className="btn-secondary"
-            onClick={() => copyText(report.plate.normalized, 'plate')}
+            onClick={() => copyText(report.query.normalized, 'query')}
           >
-            {copiedKey === 'plate' ? '✓ Plate copied' : 'Copy plate'}
+            {copiedKey === 'query'
+              ? '✓ Copied'
+              : `Copy ${report.query.kind === 'vin' ? 'VIN' : 'plate'} (${report.query.normalized})`}
           </button>
           <button
             id="btn-copy-link"
@@ -158,17 +160,16 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         </div>
       </section>
 
-      {/* Sticky Section Anchor Bar */}
+      {/* Sticky Nav */}
       <nav className="report-nav" aria-label="Report sections">
         <div className="report-nav-list">
           <a href="#overview" className="report-nav-link">Overview</a>
-          <a href="#mileage" className="report-nav-link">Mileage &amp; Inspections</a>
-          <a href="#damage" className="report-nav-link">Accidents &amp; Damage</a>
-          <a href="#theft-legal" className="report-nav-link">Theft, Insurance &amp; Legal</a>
-          <a href="#specs" className="report-nav-link">Specs &amp; Road Tax</a>
-          <a href="#valuation" className="report-nav-link">Market Value</a>
-          <a href="#timeline" className="report-nav-link">Recalls &amp; Timeline</a>
-          <a href="#official-checks" className="report-nav-link">Free Official Checks</a>
+          <a href="#specs" className="report-nav-link">Verified Specs</a>
+          <a href="#mileage" className="report-nav-link">Odometer &amp; Inspections</a>
+          <a href="#recalls" className="report-nav-link">Safety Recalls</a>
+          <a href="#ownership" className="report-nav-link">Registry &amp; Ownership</a>
+          <a href="#official-checks" className="report-nav-link">Free Official Portals</a>
+          <a href="#sources" className="report-nav-link">API Audit Trail</a>
         </div>
       </nav>
 
@@ -186,478 +187,243 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
         ))}
       </div>
 
-      {/* 1. Odometer & Inspections */}
-      <section className="report-section" id="mileage">
-        <div className="report-section-head">
-          <div>
-            <h2 className="report-section-title">Odometer History &amp; Inspections</h2>
-            <p className="report-section-desc">{report.mileage.summary}</p>
-          </div>
-          <span className={`status-pill ${report.mileage.hasRollback ? 'danger' : 'ok'}`}>
-            {report.mileage.hasRollback
-              ? `Rollback detected (-${report.mileage.rollbackDeltaKm.toLocaleString('en-US')} km)`
-              : 'Linear progression'}
-          </span>
-        </div>
-
-        <div className="metrics-row">
-          <div className="metric-box">
-            <div className="metric-label">Latest recorded reading</div>
-            <div className="metric-value mono">
-              {report.mileage.latestKm.toLocaleString('en-US')} km
-            </div>
-          </div>
-          <div className="metric-box">
-            <div className="metric-label">Estimated annual average</div>
-            <div className="metric-value mono">
-              ~{report.mileage.averageYearlyKm.toLocaleString('en-US')} km/yr
-            </div>
-          </div>
-          <div className="metric-box">
-            <div className="metric-label">Odometer anomalies</div>
-            <div className={`metric-value ${report.mileage.hasRollback ? 'danger' : ''}`}>
-              {report.mileage.hasRollback
-                ? `-${report.mileage.rollbackDeltaKm.toLocaleString('en-US')} km`
-                : 'None'}
-            </div>
-          </div>
-        </div>
-
-        <MileageChart readings={report.mileage.readings} />
-
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Mileage</th>
-                <th>Source</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.mileage.readings.map((row, idx) => (
-                <tr key={`${row.date}-${idx}`} className={row.anomaly ? 'row-anomaly' : undefined}>
-                  <td className="mono">{row.date}</td>
-                  <td className="mono" style={{ fontWeight: 700 }}>
-                    {row.km.toLocaleString('en-US')} km
-                  </td>
-                  <td>
-                    {row.source}
-                    {row.note && (
-                      <div style={{ fontSize: '0.8rem', color: 'var(--status-danger)', marginTop: 2 }}>
-                        {row.note}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`status-pill ${row.anomaly ? 'danger' : 'ok'}`}>
-                      {row.anomaly ? 'Anomaly' : 'Consistent'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {report.inspections.length > 0 && (
-          <div style={{ marginTop: 20 }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: '1rem', fontWeight: 700 }}>
-              Periodic inspection records
-            </h3>
-            <div className="data-table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Inspection date</th>
-                    <th>Result</th>
-                    <th>Recorded km</th>
-                    <th>Region</th>
-                    <th>Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.inspections.map((ins, i) => (
-                    <tr key={`${ins.date}-${i}`}>
-                      <td className="mono">{ins.date}</td>
-                      <td>
-                        <span
-                          className={`status-pill ${
-                            ins.result === 'Pass' ? 'ok' : ins.result === 'Retest' ? 'warning' : 'danger'
-                          }`}
-                        >
-                          {ins.result}
-                        </span>
-                      </td>
-                      <td className="mono" style={{ fontWeight: 700 }}>
-                        {ins.km.toLocaleString('en-US')} km
-                      </td>
-                      <td>{ins.centerRegion}</td>
-                      <td style={{ color: 'var(--ink-secondary)' }}>{ins.source}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 2. Accidents & Damage */}
-      <section className="report-section" id="damage">
-        <div className="report-section-head">
-          <div>
-            <h2 className="report-section-title">Accident &amp; Damage Analysis</h2>
-            <p className="report-section-desc">{report.damages.summary}</p>
-          </div>
-          <span
-            className={`status-pill ${
-              report.damages.totalRecords === 0
-                ? 'ok'
-                : report.damages.events.some((e) => e.severity !== 'Minor')
-                ? 'danger'
-                : 'warning'
-            }`}
-          >
-            {report.damages.totalRecords === 0
-              ? 'No damage recorded'
-              : `${report.damages.totalRecords} records found`}
-          </span>
-        </div>
-
-        <div className="damage-grid">
-          <DamageDiagram vehicleType={report.vehicleType} events={report.damages.events} />
-
-          <div className="damage-event-list">
-            {report.damages.events.length === 0 ? (
-              <div className="info-panel">
-                <h3>No accidents found</h3>
-                <p>
-                  No repair estimates or structural accident claims were found in the active
-                  provider. A physical inspection of paint thickness, panel gaps, and fasteners is
-                  always recommended before purchase.
-                </p>
-              </div>
-            ) : (
-              report.damages.events.map((event) => (
-                <article key={event.id} className="damage-event-card">
-                  <div className="damage-event-head">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="mono" style={{ fontWeight: 700, fontSize: '0.88rem' }}>
-                        {event.date}
-                      </span>
-                      <span
-                        className={`status-pill ${
-                          event.severity === 'Minor' ? 'warning' : 'danger'
-                        }`}
-                      >
-                        Severity: {event.severity}
-                      </span>
-                    </div>
-                    <span className="damage-cost">
-                      {formatCurrency(event.estimatedCostMinEur)} – {formatCurrency(event.estimatedCostMaxEur)}
-                    </span>
-                  </div>
-                  <p style={{ margin: '0 0 8px', fontSize: '0.9rem', color: 'var(--ink-primary)' }}>
-                    {event.description}
-                  </p>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
-                    Country: {event.country} · Source: {event.source}
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Theft, Insurance & Legal */}
-      <section className="report-section" id="theft-legal">
-        <div className="report-section-head">
-          <div>
-            <h2 className="report-section-title">Theft Check, Insurance (RCA) &amp; Legal Status</h2>
-            <p className="report-section-desc">
-              Circulation status, previous commercial/fleet use, and lien indicators.
-            </p>
-          </div>
-        </div>
-
-        <div className="two-col-grid">
-          <div className="info-panel">
-            <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Stolen vehicle registry</h3>
-              <span
-                className={`status-pill ${
-                  report.theft.status === 'clear'
-                    ? 'ok'
-                    : report.theft.status === 'flagged'
-                    ? 'danger'
-                    : 'info'
-                }`}
-              >
-                {report.theft.status === 'clear'
-                  ? 'Clear'
-                  : report.theft.status === 'flagged'
-                  ? 'Flagged'
-                  : 'Direct check'}
-              </span>
-            </div>
-            <p style={{ marginBottom: 10 }}>{report.theft.summary}</p>
-            <div style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
-              Sources: {report.theft.databasesChecked.join(' · ')}
-            </div>
-          </div>
-
-          <div className="info-panel">
-            <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Compulsory insurance (RCA)</h3>
-              <span
-                className={`status-pill ${
-                  report.insurance.covered === true
-                    ? 'ok'
-                    : report.insurance.covered === false
-                    ? 'danger'
-                    : 'info'
-                }`}
-              >
-                {report.insurance.covered === true
-                  ? 'Active'
-                  : report.insurance.covered === false
-                  ? 'Uninsured'
-                  : 'Direct check'}
-              </span>
-            </div>
-            <p>{report.insurance.summary}</p>
-            {report.insurance.validUntil && (
-              <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--ink-muted)', marginTop: 8 }}>
-                Estimated expiry: {report.insurance.validUntil}
-              </div>
-            )}
-          </div>
-
-          <div className="info-panel">
-            <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Previous use &amp; ownership</h3>
-              <span
-                className={`status-pill ${
-                  report.legal.previousUse === 'Private use'
-                    ? 'ok'
-                    : report.legal.previousUse === 'Not detected'
-                    ? 'info'
-                    : 'warning'
-                }`}
-              >
-                {report.legal.previousUse}
-              </span>
-            </div>
-            <p>{report.legal.summary}</p>
-            <div style={{ fontSize: '0.82rem', fontWeight: 600, marginTop: 8 }}>
-              Estimated owners: {report.legal.ownersCount}
-            </div>
-          </div>
-
-          <div className="info-panel">
-            <div className="quick-check-head">
-              <h3 style={{ margin: 0 }}>Administrative liens</h3>
-              <span className={`status-pill ${report.legal.administrativeDetention ? 'danger' : 'ok'}`}>
-                {report.legal.administrativeDetention ? 'Detected' : 'None detected'}
-              </span>
-            </div>
-            <p>
-              For legally binding verification of liens, seizures, and ownership transfers prior to
-              purchase, request an official PRA report through ACI.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Technical Specs & Tax */}
+      {/* 1. Verified Technical Specifications */}
       <section className="report-section" id="specs">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Technical Specs, Emissions &amp; Road Tax</h2>
+            <h2 className="report-section-title">Verified Technical Specifications</h2>
             <p className="report-section-desc">
-              Key powertrain specifications, environmental compliance, and novice driver eligibility.
+              Only real values returned by official open registries or ISO 3779 decoding are shown below.
             </p>
           </div>
+          <span className={`status-pill ${populatedSpecs.length > 2 ? 'ok' : 'unavailable'}`}>
+            {populatedSpecs.length} verified field(s)
+          </span>
         </div>
 
-        <div className="specs-grid">
-          <div className="spec-cell">
-            <div className="spec-key">First registration (series est.)</div>
-            <div className="spec-val mono">
-              {report.specs.firstRegistrationDate} ({report.plate.estimatedRegistrationPeriod})
-            </div>
+        {populatedSpecs.length > 0 ? (
+          <div className="specs-grid">
+            {populatedSpecs.map(([label, value]) => (
+              <div key={label} className="spec-cell">
+                <div className="spec-key">{label}</div>
+                <div className="spec-val">{value}</div>
+              </div>
+            ))}
           </div>
-          <div className="spec-cell">
-            <div className="spec-key">Engine &amp; fuel</div>
-            <div className="spec-val">
-              {report.specs.engineDisplacementCc} cc · {report.specs.fuel}
-            </div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">Power output</div>
-            <div className="spec-val mono">
-              {report.specs.powerKw} kW / {report.specs.powerHp} HP
-            </div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">Transmission</div>
-            <div className="spec-val">{report.specs.transmission}</div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">Emissions standard</div>
-            <div className="spec-val">{report.specs.euroClass}</div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">CO₂ emissions</div>
-            <div className="spec-val mono">{report.specs.co2GramsPerKm} g/km</div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">Novice driver eligible</div>
-            <div className="spec-val">{report.specs.noviceDriverAllowed ? 'Yes' : 'No (check limits)'}</div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">Curb weight</div>
-            <div className="spec-val mono">{report.specs.weightKg} kg</div>
-          </div>
-          <div className="spec-cell">
-            <div className="spec-key">Estimated annual tax</div>
-            <div className="spec-val mono">~{formatCurrency(report.specs.estimatedAnnualTaxEur)} / yr</div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Market Valuation */}
-      <section className="report-section" id="valuation">
-        <div className="report-section-head">
-          <div>
-            <h2 className="report-section-title">Market Valuation</h2>
-            <p className="report-section-desc">{report.marketValue.note}</p>
-          </div>
-          <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800 }}>
-            {formatCurrency(report.marketValue.adjustedEstimateEur)}
-          </div>
-        </div>
-
-        <div className="price-range-box">
-          <div style={{ fontSize: '0.84rem', color: 'var(--ink-secondary)' }}>
-            Adjusted vehicle estimate relative to typical market pricing:
-          </div>
-
-          <div className="price-track" aria-hidden="true">
-            <div
-              className="price-marker"
-              style={{ left: `${markerPercent}%` }}
-              title={`Adjusted estimate: ${formatCurrency(report.marketValue.adjustedEstimateEur)}`}
-            />
-          </div>
-
-          <div className="price-labels">
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Low range</div>
-              <strong className="mono">{formatCurrency(report.marketValue.lowEur)}</strong>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>Market average</div>
-              <strong className="mono">{formatCurrency(report.marketValue.averageEur)}</strong>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>High range</div>
-              <strong className="mono">{formatCurrency(report.marketValue.highEur)}</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. Safety Recalls & Unified Timeline */}
-      <section className="report-section" id="timeline">
-        <div className="report-section-head">
-          <div>
-            <h2 className="report-section-title">Safety Recalls &amp; Vehicle Timeline</h2>
-            <p className="report-section-desc">
-              Unified chronological log of recorded events.
+        ) : (
+          <div className="info-panel">
+            <h3>No open technical API available for this country</h3>
+            <p>
+              Enter the vehicle&apos;s 17-character VIN in Scarner for live factory decoding, or open
+              the official free {report.query.countryName} portals below.
             </p>
           </div>
+        )}
+      </section>
+
+      {/* 2. Odometer & Inspections */}
+      <section className="report-section" id="mileage">
+        <div className="report-section-head">
+          <div>
+            <h2 className="report-section-title">Odometer History &amp; Periodic Inspections</h2>
+            <p className="report-section-desc">{report.mileage.summary}</p>
+          </div>
+          <span
+            className={`status-pill ${
+              report.mileage.hasRollback
+                ? 'danger'
+                : report.mileage.available || report.inspections.available
+                ? 'ok'
+                : 'unavailable'
+            }`}
+          >
+            {report.mileage.hasRollback
+              ? `Rollback (-${report.mileage.rollbackDeltaKm.toLocaleString('en-US')} km)`
+              : report.mileage.available
+              ? `${report.mileage.readings.length} real readings`
+              : report.inspections.available
+              ? `${report.inspections.records.length} inspection record(s)`
+              : 'Not in free open API'}
+          </span>
         </div>
 
-        {report.recalls.length > 0 && (
-          <div style={{ marginBottom: 22 }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: '0.98rem', fontWeight: 700 }}>
-              Manufacturer recall campaigns
-            </h3>
-            <div className="damage-event-list">
-              {report.recalls.map((recall) => (
-                <div key={recall.id} className="damage-event-card">
-                  <div className="damage-event-head">
-                    <span className="mono" style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                      {recall.id} · {recall.date}
-                    </span>
-                    <span
-                      className={`status-pill ${
-                        recall.status === 'Completed'
-                          ? 'ok'
-                          : recall.status === 'Check required'
-                          ? 'warning'
-                          : 'danger'
-                      }`}
-                    >
-                      {recall.status}
-                    </span>
-                  </div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{recall.title}</div>
-                  <div style={{ fontSize: '0.84rem', color: 'var(--ink-secondary)' }}>
-                    Component: {recall.component} · {recall.source}
-                  </div>
-                </div>
-              ))}
+        {report.mileage.available && <MileageChart readings={report.mileage.readings} />}
+
+        {report.inspections.nextDueDate && (
+          <div className="metrics-row" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+            <div className="metric-box">
+              <div className="metric-label">Next Inspection Due / Expiry</div>
+              <div className="metric-value mono">{report.inspections.nextDueDate}</div>
+            </div>
+            <div className="metric-box">
+              <div className="metric-label">Recorded Inspections</div>
+              <div className="metric-value mono">{report.inspections.records.length}</div>
             </div>
           </div>
         )}
 
-        <div className="timeline-list">
-          {report.timeline.map((item) => (
-            <div key={item.id} className="timeline-item">
-              <span className={`timeline-dot ${item.severity}`} aria-hidden="true" />
-              <div className="timeline-meta">
-                <span className="mono" style={{ fontWeight: 700, color: 'var(--ink-primary)' }}>
-                  {item.date}
-                </span>
-                {item.location && <span>· {item.location}</span>}
-                {typeof item.km === 'number' && (
-                  <span className="mono">· {item.km.toLocaleString('en-US')} km</span>
-                )}
-              </div>
-              <div style={{ fontWeight: 700, marginBottom: 3 }}>{item.title}</div>
-              <div style={{ fontSize: '0.88rem', color: 'var(--ink-secondary)' }}>{item.detail}</div>
-            </div>
-          ))}
-        </div>
+        {report.inspections.records.length > 0 ? (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Result / Type</th>
+                  <th>Valid Until</th>
+                  <th>Mileage</th>
+                  <th>Defects / Notes</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.inspections.records.map((rec, idx) => (
+                  <tr key={`${rec.date}-${idx}`}>
+                    <td className="mono">{rec.date}</td>
+                    <td style={{ fontWeight: 600 }}>{rec.result}</td>
+                    <td className="mono">{rec.expiryDate ?? '—'}</td>
+                    <td className="mono">
+                      {typeof rec.km === 'number' ? `${rec.km.toLocaleString('en-US')} km` : 'Not published'}
+                    </td>
+                    <td>
+                      {rec.notes && rec.notes.length > 0 ? (
+                        <ul style={{ margin: 0, paddingLeft: 16, fontSize: '0.8rem' }}>
+                          {rec.notes.map((n, i) => (
+                            <li key={i}>{n}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ color: 'var(--ink-muted)' }}>None recorded</span>
+                      )}
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--ink-secondary)' }}>{rec.source}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="info-panel">
+            <h3>{report.inspections.available ? 'No historical inspection rows yet' : 'Check official portal for real mileage & inspections'}</h3>
+            <p>{report.inspections.summary}</p>
+          </div>
+        )}
       </section>
 
-      {/* 7. Free Official Verification Portals & Transparency */}
+      {/* 3. Safety Recalls */}
+      <section className="report-section" id="recalls">
+        <div className="report-section-head">
+          <div>
+            <h2 className="report-section-title">Safety Recalls</h2>
+            <p className="report-section-desc">{report.recalls.summary}</p>
+          </div>
+          <span
+            className={`status-pill ${
+              report.flags.openRecallFlag === true
+                ? 'danger'
+                : report.recalls.items.length > 0
+                ? 'warning'
+                : report.recalls.available
+                ? 'ok'
+                : 'unavailable'
+            }`}
+          >
+            {report.recalls.items.length > 0
+              ? `${report.recalls.items.length} alert(s)`
+              : report.recalls.available
+              ? 'None matched'
+              : 'Check EU Safety Gate'}
+          </span>
+        </div>
+
+        {report.recalls.items.length > 0 ? (
+          <div className="damage-event-list">
+            {report.recalls.items.map((item) => (
+              <article key={item.id} className="damage-event-card">
+                <div className="damage-event-head">
+                  <span className="mono" style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                    {item.id}{item.date ? ` · ${item.date}` : ''}
+                  </span>
+                  <span className={`status-pill ${item.status === 'Open flag' ? 'danger' : 'warning'}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.component}</div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.88rem', color: 'var(--ink-primary)' }}>
+                  {item.summary}
+                </p>
+                {item.remedy && (
+                  <p style={{ margin: '0 0 6px', fontSize: '0.83rem', color: 'var(--ink-secondary)' }}>
+                    <strong>Remedy:</strong> {item.remedy}
+                  </p>
+                )}
+                <div style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>Source: {item.source}</div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="info-panel">
+            <h3>No open recalls matched</h3>
+            <p>
+              For full European recall coverage, cross-check the vehicle make &amp; model on the
+              official European Commission Safety Gate portal below.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* 4. Registry Flags & Ownership History */}
+      <section className="report-section" id="ownership">
+        <div className="report-section-head">
+          <div>
+            <h2 className="report-section-title">Registry Status &amp; Ownership Events</h2>
+            <p className="report-section-desc">{report.ownership.summary}</p>
+          </div>
+        </div>
+
+        {report.ownership.events.length > 0 ? (
+          <div className="timeline-list">
+            {report.ownership.events.map((ev, idx) => (
+              <div key={`${ev.date}-${idx}`} className="timeline-item">
+                <span className="timeline-dot ok" aria-hidden="true" />
+                <div className="timeline-meta">
+                  <span className="mono" style={{ fontWeight: 700, color: 'var(--ink-primary)' }}>
+                    {ev.date}
+                  </span>
+                  <span>· {ev.source}</span>
+                </div>
+                <div style={{ fontWeight: 600 }}>{ev.description}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="info-panel">
+            <h3>Ownership history not exposed by open API</h3>
+            <p>{report.flags.notes[0] ?? report.ownership.summary}</p>
+          </div>
+        )}
+      </section>
+
+      {/* 5. Official Free European Verification Portals */}
       <section className="report-section" id="official-checks">
         <div className="report-section-head">
           <div>
-            <h2 className="report-section-title">Free Official Real-Time Verification</h2>
+            <h2 className="report-section-title">Free Official Government Verification Portals</h2>
             <p className="report-section-desc">
-              Official public portals require completing a CAPTCHA directly on the government site.
-              Copy plate <strong className="mono">{report.plate.normalized}</strong> in one click
-              and open the free official checks below without paying a middleman.
+              Copy <strong className="mono">{report.query.normalized}</strong> in 1 click and verify
+              official government records directly for free (no intermediaries or paywalls).
             </p>
           </div>
           <button
             type="button"
             className="btn-secondary no-print"
-            onClick={() => copyText(report.plate.normalized, 'plate')}
+            onClick={() => copyText(report.query.normalized, 'query')}
           >
-            {copiedKey === 'plate' ? '✓ Plate copied' : `Copy ${report.plate.normalized}`}
+            {copiedKey === 'query' ? '✓ Copied' : `Copy ${report.query.normalized}`}
           </button>
         </div>
 
         <div className="official-grid">
-          {report.officialLinks.map((link) => (
+          {report.officialPortals.map((link) => (
             <a
               key={link.id}
               href={link.url}
@@ -666,26 +432,65 @@ export function VehicleReportView({ report }: VehicleReportViewProps) {
               className="official-card"
             >
               <div>
-                <div className="official-authority">{link.authority}</div>
+                <div className="official-authority">
+                  {link.country} · {link.authority}
+                </div>
                 <h3>{link.title}</h3>
                 <p>{link.description}</p>
               </div>
-              <span className="official-link-cta">Open free official portal →</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>
+                  Input: {link.lookupBy} · {link.accessNote}
+                </span>
+                <span className="official-link-cta">Open free portal →</span>
+              </div>
             </a>
           ))}
         </div>
+      </section>
 
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-muted)', marginBottom: 8 }}>
-            Data source transparency
+      {/* 6. Live API Audit Trail */}
+      <section className="report-section" id="sources">
+        <div className="report-section-head">
+          <div>
+            <h2 className="report-section-title">Live Data Source Audit Trail</h2>
+            <p className="report-section-desc">
+              Exact providers queried to generate this report.
+            </p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem', color: 'var(--ink-secondary)' }}>
-            {report.sources.map((src) => (
-              <div key={src.providerId}>
-                <strong style={{ color: 'var(--ink-primary)' }}>{src.label}</strong> ({src.mode}): {src.note}
-              </div>
-            ))}
-          </div>
+        </div>
+
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Provider</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.sources.map((src) => (
+                <tr key={src.providerId}>
+                  <td style={{ fontWeight: 700 }}>{src.label}</td>
+                  <td>
+                    <span
+                      className={`status-pill ${
+                        src.status === 'success'
+                          ? 'ok'
+                          : src.status === 'error'
+                          ? 'danger'
+                          : 'unavailable'
+                      }`}
+                    >
+                      {src.status}
+                    </span>
+                  </td>
+                  <td style={{ color: 'var(--ink-secondary)' }}>{src.detail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>
