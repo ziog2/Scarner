@@ -1,0 +1,48 @@
+name: Ingest Anonymous Extension Telemetry
+
+on:
+  repository_dispatch:
+    types: [scarner_telemetry]
+  workflow_dispatch:
+    inputs:
+      sample_events_json:
+        description: "JSON array of sample TelemetryEvent objects for manual test"
+        required: false
+        default: '[{"eventType":"listing_analyzed","date":"2026-11-24","marketplace":"autoscout24.it","country":"IT","vehicleMake":"VOLKSWAGEN","vehicleModel":"GOLF","registrationYear":2021,"detectionMethod":"plate_ocr","vehicleHash8":"a1b2c3d4","greenCount":5,"orangeCount":1,"recallsCount":0,"extensionVersion":"1.0.0"}]'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scarner-telemetry-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate and aggregate telemetry events
+        env:
+          DISPATCH_EVENTS: ${{ toJson(github.event.client_payload.events) }}
+          MANUAL_EVENTS: ${{ inputs.sample_events_json }}
+        run: node scripts/ingest-telemetry.mjs
+
+      - name: Commit updated telemetry ledger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add telemetry/events.jsonl telemetry/summary.json telemetry/README.md
+          if git diff --cached --quiet; then
+            echo "No telemetry changes to commit."
+          else
+            git commit -m "chore(telemetry): record anonymous Scarner extension usage batch [skip ci]"
+            git push
+          fi

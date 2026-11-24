@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scarner Extension Settings</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 720px;
+      margin: 32px auto;
+      padding: 0 20px 48px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    p.sub {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: #475569;
+    }
+    label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin: 10px 0 4px;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      background: #1d4ed8;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+    .saved {
+      margin-left: 12px;
+      font-size: 13px;
+      color: #15803d;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Scarner — Configuration</h1>
+    <p class="sub">
+      Keyless sources (Netherlands RDW Open Data, ISO 3779 VIN, NHTSA vPIC &amp; Recalls, local Tesseract OCR) work out of the box at zero cost. Optionally configure free national government keys or GitHub telemetry sync below.
+    </p>
+
+    <div class="card">
+      <h2>1. GitHub Anonymous Telemetry Sync</h2>
+      <p class="sub">
+        Scarner tracks strictly anonymous usage counts (no PII, raw plates hashed via 8-hex SHA-256) and dispatches them to GitHub Actions (<code>scarner_telemetry</code>).
+      </p>
+      <label for="opt-relay">Public Telemetry Relay URL (Cloudflare Worker, recommended)</label>
+      <input id="opt-relay" type="text" placeholder="https://scarner-telemetry.<your-subdomain>.workers.dev" />
+
+      <label for="opt-gh-repo">Target GitHub Repository (Direct Dispatch Mode)</label>
+      <input id="opt-gh-repo" type="text" placeholder="ziog2/Scarner" />
+
+      <label for="opt-gh-token">Optional Personal Fine-Grained GitHub Token (Contents Read/Write on repo)</label>
+      <input id="opt-gh-token" type="password" placeholder="github_pat_..." />
+    </div>
+
+    <div class="card">
+      <h2>2. Optional Free European Government API Keys</h2>
+      <p class="sub">All keys below are 100% free from official national transport authorities.</p>
+
+      <label for="opt-uk-dvla">UK DVLA VES API Key (developer-portal.driver-vehicle-licensing.api.gov.uk)</label>
+      <input id="opt-uk-dvla" type="password" />
+
+      <label for="opt-uk-dvsa">UK DVSA MOT History API Key (documentation.history.mot.api.gov.uk)</label>
+      <input id="opt-uk-dvsa" type="password" />
+
+      <label for="opt-uk-cid">UK DVSA OAuth Client ID</label>
+      <input id="opt-uk-cid" type="text" />
+
+      <label for="opt-uk-csec">UK DVSA OAuth Client Secret</label>
+      <input id="opt-uk-csec" type="password" />
+
+      <label for="opt-uk-turl">UK DVSA OAuth Token URL</label>
+      <input id="opt-uk-turl" type="text" />
+
+      <label for="opt-uk-scope">UK DVSA OAuth Scope</label>
+      <input id="opt-uk-scope" type="text" />
+
+      <label for="opt-no">Norway Statens Vegvesen API Key (vegvesen.no)</label>
+      <input id="opt-no" type="password" />
+
+      <label for="opt-cz">Czech Republic RSV API Key (dataovozidlech.cz)</label>
+      <input id="opt-cz" type="password" />
+    </div>
+
+    <button id="btn-save" class="btn" type="button">Save Settings</button>
+    <span id="save-status" class="saved"></span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+{
+  "manifest_version": 3,
+  "name": "Scarner — Free Vehicle Check for AutoScout24",
+  "version": "1.0.0",
+  "description": "Automatic plate OCR, free European registry checks, conditional green/orange verification (±7,000 km), and PDF/CSV export on AutoScout24.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Scarner Vehicle Check",
+    "default_popup": "popup.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["storage", "offscreen"],
+  "host_permissions": [
+    "*://*.autoscout24.com/*",
+    "*://*.autoscout24.it/*",
+    "*://*.autoscout24.de/*",
+    "*://*.autoscout24.nl/*",
+    "*://*.autoscout24.be/*",
+    "*://*.autoscout24.fr/*",
+    "*://*.autoscout24.es/*",
+    "*://*.autoscout24.at/*",
+    "*://*.autoscout24.lu/*",
+    "*://*.autoscout24.pl/*",
+    "*://*.autoscout24.cz/*",
+    "*://*.autoscout24.se/*",
+    "*://*.autoscout24.ch/*",
+    "*://*.autoscout24.net/*",
+    "https://opendata.rdw.nl/*",
+    "https://vpic.nhtsa.dot.gov/*",
+    "https://api.nhtsa.gov/*",
+    "https://driver-vehicle-licensing.api.gov.uk/*",
+    "https://history.mot.api.gov.uk/*",
+    "https://www.vegvesen.no/*",
+    "https://api.dataovozidlech.cz/*",
+    "https://api.github.com/*"
+  ],
+  "background": {
+    "service_worker": "serviceWorker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.autoscout24.com/*",
+        "*://*.autoscout24.it/*",
+        "*://*.autoscout24.de/*",
+        "*://*.autoscout24.nl/*",
+        "*://*.autoscout24.be/*",
+        "*://*.autoscout24.fr/*",
+        "*://*.autoscout24.es/*",
+        "*://*.autoscout24.at/*",
+        "*://*.autoscout24.lu/*",
+        "*://*.autoscout24.pl/*",
+        "*://*.autoscout24.cz/*",
+        "*://*.autoscout24.se/*",
+        "*://*.autoscout24.ch/*"
+      ],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "tesseract/worker.min.js",
+        "tesseract/tesseract-core-simd-lstm.wasm.js",
+        "tesseract/lang-data/eng.traineddata.gz"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
