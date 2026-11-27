@@ -1,4 +1,5 @@
 import { analyzePlateChronology } from './plateChronology';
+import { queryOpenVehicleSpecsCatalog } from './openSpecsCatalog';
 import { queryNorwayVegvesenApi, queryUkGovernmentApis } from './optionalGovApis';
 import { buildFreePortalsAndSearches } from './portalsAndWebSearch';
 import { queryNetherlandsRdw } from './rdwNetherlands';
@@ -25,6 +26,8 @@ export async function gatherFreeExternalData(
     make: null,
     model: null,
     variant: null,
+    specCatalogLabel: null,
+    generationYearRange: null,
     manufacturingCountry: null,
     firstRegistrationDate: null,
     registrationYear: null,
@@ -177,19 +180,37 @@ export async function gatherFreeExternalData(
     result.weightKg = result.weightKg ?? vinData.weightKg;
   }
 
-  // 5. Always Query Free Safety Recalls (works even without plate/VIN using listing Make + Model + Year!)
+  // 5. Open Automotive Technical Specification Catalog (ODbL — enriches all EU listings lacking keyless plate APIs)
+  const openSpecs = await queryOpenVehicleSpecsCatalog(listing);
+  auditTrail.push(openSpecs.audit);
+  if (openSpecs.matched) {
+    result.specCatalogLabel = openSpecs.specLabel;
+    result.generationYearRange = openSpecs.generationYearRange;
+    result.fuelType = result.fuelType ?? openSpecs.fuelType;
+    result.powerKw = result.powerKw ?? openSpecs.powerKw;
+    result.powerHp = result.powerHp ?? openSpecs.powerHp;
+    result.displacementCc = result.displacementCc ?? openSpecs.displacementCc;
+    result.cylinders = result.cylinders ?? openSpecs.cylinders;
+    result.co2GramsPerKm = result.co2GramsPerKm ?? openSpecs.co2GramsPerKm;
+    result.weightKg = result.weightKg ?? openSpecs.weightKg;
+  }
+
+  // 6. Always Query Free Safety Recalls (resolves multi-word trims like MINI John Cooper Works -> COOPER S)
   const recallMake = result.make ?? listing.make;
   const recallModel = result.model ?? listing.model;
   const recallYear = result.registrationYear ?? listing.registrationYear;
-  const recallsRes = await queryFreeSafetyRecalls(recallMake, recallModel, recallYear);
+  const recallsRes = await queryFreeSafetyRecalls(recallMake, recallModel, recallYear, listing.trim);
   auditTrail.push(recallsRes.audit);
   result.recalls = recallsRes.items;
 
-  // 6. Free Official Portals & Open-Web Footprint Searches
+  // 7. Free Official Portals & Open-Web Footprint Searches
   const links = buildFreePortalsAndSearches({
     country: effectiveCountry,
     plate: identifiers.plate,
     vin: identifiers.vin,
+    make: listing.make,
+    model: listing.model,
+    year: listing.registrationYear,
     carpassUrl: listing.carpassUrl,
   });
   result.portals = links.portals;

@@ -39,6 +39,7 @@ export interface DetectedIdentifier {
   plateMethod: DetectionMethod;
   plateConfidence: number;
   plateSourceImageUrl?: string | null;
+  ocrPhotosScanned?: number;
   vin: string | null;
   vinMethod: DetectionMethod;
 }
@@ -52,6 +53,8 @@ export interface ExtractedListing {
   title: string;
   make: string | null;
   model: string | null;
+  modelGroup?: string | null;
+  generation?: string | null;
   trim: string | null;
   priceEur: number | null;
   mileageKm: number | null;
@@ -122,6 +125,8 @@ export interface ExternalVehicleData {
   make: string | null;
   model: string | null;
   variant: string | null;
+  specCatalogLabel?: string | null;
+  generationYearRange?: [number, number | null] | null;
   manufacturingCountry: string | null;
   firstRegistrationDate: string | null;
   registrationYear: number | null;

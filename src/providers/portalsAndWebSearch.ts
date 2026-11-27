@@ -2,45 +2,72 @@ import { CountryCode, FreePortalCheck } from '../types/domain';
 
 const ALL_PORTALS: FreePortalCheck[] = [
   {
-    id: 'eu-safety-gate',
-    country: 'EU',
-    title: 'EU Safety Gate (RAPEX) Recall Search',
-    authority: 'European Commission',
-    lookupBy: 'Make & Model',
-    url: 'https://ec.europa.eu/safety-gate-alerts/screen/search',
-    accessNote: 'Free open EU recall portal',
-  },
-  {
     id: 'it-mit-inspections',
     country: 'IT',
-    title: 'MIT Latest Inspection & Recorded Km',
-    authority: "Il Portale dell'Automobilista",
+    title: 'MIT Official Inspections & Recorded Km History',
+    authority: "Il Portale dell'Automobilista (MIT)",
     lookupBy: 'Plate',
-    url: 'https://www.ilportaledellautomobilista.it/web/portale-automobilista/verifica-revisioni-effettuate',
-    accessNote: 'Free (CAPTCHA) — paste km into Scarner to check ±7,000 km',
+    url: 'https://www.ilportaledellautomobilista.it/interrogazionistoricorevisioni/spa/',
+    accessNote: 'Free official km log since 2018 (CAPTCHA) — enter km in Scarner to check ±7,000 km',
   },
   {
     id: 'it-mit-rca',
     country: 'IT',
-    title: 'MIT Compulsory RCA Insurance Status',
-    authority: "Il Portale dell'Automobilista",
+    title: 'MIT Compulsory RCA Insurance Coverage Check',
+    authority: "Il Portale dell'Automobilista (MIT)",
     lookupBy: 'Plate',
-    url: 'https://www.ilportaledellautomobilista.it/web/portale-automobilista/verifica-copertura-rc',
-    accessNote: 'Free live check (CAPTCHA)',
+    url: 'https://www.ilportaledellautomobilista.it/web/portale-automobilista/ext/verifica-copertura-rc',
+    accessNote: 'Free live insurance policy status by plate (CAPTCHA)',
+  },
+  {
+    id: 'it-mit-euro',
+    country: 'IT',
+    title: 'MIT Official Euro Emissions Class & Fuel Check',
+    authority: "Il Portale dell'Automobilista (MIT)",
+    lookupBy: 'Plate',
+    url: 'https://www.ilportaledellautomobilista.it/web/portale-automobilista/ext/verifica-classe-ambientale-veicolo',
+    accessNote: 'Free official Euro standard & fuel lookup by plate (CAPTCHA)',
+  },
+  {
+    id: 'it-mit-kw',
+    country: 'IT',
+    title: 'MIT Power-to-Weight & Engine Rating Check',
+    authority: "Il Portale dell'Automobilista (MIT)",
+    lookupBy: 'Plate',
+    url: 'https://www.ilportaledellautomobilista.it/web/portale-automobilista/ext/neopatentati',
+    accessNote: 'Free official power ratio lookup by plate (CAPTCHA)',
+  },
+  {
+    id: 'it-aci-bollo',
+    country: 'IT',
+    title: 'ACI Official Tax, kW & Emissions Verification',
+    authority: "Automobil Club d'Italia (ACI)",
+    lookupBy: 'Plate',
+    url: 'https://aci.gov.it/servizi/bollo-auto/',
+    accessNote: 'Free official ACI Bollo & kW lookup',
   },
   {
     id: 'it-police-stolen',
     country: 'IT',
-    title: 'Stolen Vehicles & Chassis Database',
-    authority: 'Italian Ministry of Interior',
+    title: 'Stolen License Plates & Chassis (VIN) Database',
+    authority: 'Italian Ministry of Interior (Crimnet)',
     lookupBy: 'Plate or VIN',
     url: 'https://crimnet.dcpc.interno.gov.it/crimnet/ricerca-targhe-telai-rubati-smarriti',
-    accessNote: 'Free police check (CAPTCHA)',
+    accessNote: 'Free official police check by Plate or VIN',
+  },
+  {
+    id: 'eu-safety-gate',
+    country: 'EU',
+    title: 'EU Safety Gate (RAPEX) Official Recall Search',
+    authority: 'European Commission',
+    lookupBy: 'Make & Model',
+    url: 'https://ec.europa.eu/safety-gate-alerts/screen/search',
+    accessNote: 'Free European Commission recall database',
   },
   {
     id: 'nl-rdw-ovi',
     country: 'NL',
-    title: 'RDW OVI (Tellerstand Mileage Judgment)',
+    title: 'RDW OVI (Tellerstand Odometer Judgment)',
     authority: 'RDW Netherlands',
     lookupBy: 'Plate',
     url: 'https://ovi.rdw.nl/',
@@ -169,6 +196,9 @@ export function buildFreePortalsAndSearches(params: {
   country: CountryCode;
   plate: string | null;
   vin: string | null;
+  make?: string | null;
+  model?: string | null;
+  year?: number | null;
   carpassUrl: string | null;
 }): {
   portals: FreePortalCheck[];
@@ -213,10 +243,30 @@ export function buildFreePortalsAndSearches(params: {
     );
   }
   if (params.plate) {
-    const q = encodeURIComponent(`"${params.plate}"`);
+    // Also search spaced Italian format e.g. "GB000RX" OR "GB 000 RX"
+    const spacedIt =
+      params.country === 'IT' && params.plate.length === 7
+        ? ` OR "${params.plate.slice(0, 2)} ${params.plate.slice(2, 5)} ${params.plate.slice(5, 7)}"`
+        : '';
+    const q = encodeURIComponent(`"${params.plate}"${spacedIt}`);
+    webSearchUrls.push(
+      {
+        label: `Search Web & Forum Mentions for Plate "${params.plate}" (Google)`,
+        url: `https://www.google.com/search?q=${q}`,
+      },
+      {
+        label: `Search Web Mentions for Plate "${params.plate}" (DuckDuckGo)`,
+        url: `https://duckduckgo.com/?q=${encodeURIComponent(`"${params.plate}"`)}`,
+      }
+    );
+  }
+  if (params.make && params.model) {
+    const recallQuery = encodeURIComponent(
+      `site:ec.europa.eu/safety-gate-alerts "${params.make}" "${params.model}" ${params.year ?? ''}`.trim()
+    );
     webSearchUrls.push({
-      label: `Search Web Mentions for Plate "${params.plate}" (DuckDuckGo)`,
-      url: `https://duckduckgo.com/?q=${q}`,
+      label: `Search EU Safety Gate Alerts for ${params.make} ${params.model}`,
+      url: `https://www.google.com/search?q=${recallQuery}`,
     });
   }
 

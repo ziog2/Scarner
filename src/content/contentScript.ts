@@ -7,6 +7,7 @@ import { downloadPdfReport } from '../export/pdfExporter';
 import {
   ExtractedListing,
   FieldComparison,
+  FreePortalCheck,
   HighlightFieldKey,
   VerificationReport,
 } from '../types/domain';
@@ -21,6 +22,7 @@ let showEditDrawer = false;
 let manualPlate = '';
 let manualVin = '';
 let manualPortalKm = '';
+let copyFeedbackText = '';
 
 let hostEl: HTMLElement | null = null;
 let shadowRootRef: ShadowRoot | null = null;
@@ -129,6 +131,101 @@ function formatMethodLabel(m: string): string {
   }
 }
 
+function findPrimaryMileagePortal(portals: FreePortalCheck[]): FreePortalCheck | null {
+  const mileageKeywords = /inspection|km|odometer|tellerstand|mot|tachometr|historia|car-pass|synsrapport/i;
+  return portals.find((p) => mileageKeywords.test(p.title)) ?? portals[0] ?? null;
+}
+
+async function copyIdentifierWithToast(val: string): Promise<void> {
+  if (!val) return;
+  try {
+    await navigator.clipboard.writeText(val);
+    copyFeedbackText = `Copied ${val} — paste on portal!`;
+    renderOverlay();
+    setTimeout(() => {
+      copyFeedbackText = '';
+      if (currentReport && !isScanning) renderOverlay();
+    }, 3200);
+  } catch {
+    // Ignore clipboard permission failure
+  }
+}
+
+function renderComparisonCard(c: FieldComparison, r: VerificationReport): string {
+  const statusLabel =
+    c.status === 'consistent'
+      ? 'Consistent'
+      : c.status === 'attention'
+      ? 'Attention'
+      : 'Check Available';
+
+  let extraBody = '';
+
+  // Inline 1-click Official Km Portal + Quick ±7,000 km Verifier directly inside the Mileage card
+  if (c.key === 'mileage') {
+    const kmPortal = findPrimaryMileagePortal(r.external.portals);
+    const idToCopy = r.identifiers.plate ?? r.identifiers.vin ?? '';
+    const portalBtn = kmPortal
+      ? `<a class="sc-quick-pill sc-copy-on-open" data-copy="${escapeHtml(
+          idToCopy
+        )}" href="${escapeHtml(kmPortal.url)}" target="_blank" rel="noopener noreferrer">
+           <span>${idToCopy ? `Copy ${escapeHtml(idToCopy)} &amp; ` : ''}Open ${escapeHtml(
+             kmPortal.title
+           )}</span>
+           <span>↗</span>
+         </a>`
+      : '';
+
+    extraBody = `
+      <div class="sc-inline-km" style="flex-direction:column;align-items:stretch;">
+        ${portalBtn}
+        <div style="display:flex;gap:5px;width:100%;">
+          <input id="sc-inline-km-input" class="sc-input" type="number" placeholder="Enter official portal km (e.g. 28500)" value="${escapeHtml(
+            manualPortalKm
+          )}" />
+          <button id="sc-inline-km-btn" class="sc-small-btn primary" style="white-space:nowrap;" type="button">Check ±7,000 km</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Inline Recall Campaign Notices when matched
+  if (c.key === 'recalls' && r.external.recalls.length > 0) {
+    extraBody = `
+      <div class="sc-recall-items">
+        ${r.external.recalls
+          .slice(0, 4)
+          .map(
+            (rec) => `
+          <div>
+            <strong>[${escapeHtml(rec.id)}] ${escapeHtml(rec.component)}</strong>${
+              rec.date ? ` (${escapeHtml(rec.date)})` : ''
+            }: ${escapeHtml(rec.summary.slice(0, 145))}${rec.summary.length > 145 ? '…' : ''}
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="sc-card ${c.status}">
+      <div class="sc-card-head">
+        <span class="sc-card-title">${escapeHtml(c.label)}</span>
+        <span class="sc-badge ${c.status}">${statusLabel}</span>
+      </div>
+      <div class="sc-vals">
+        <strong>Ad:</strong> ${escapeHtml(c.listingValue)} &nbsp;·&nbsp; <strong>DB:</strong> ${escapeHtml(
+          c.databaseValue
+        )}
+      </div>
+      <div class="sc-note">${escapeHtml(c.conditionalNote)}</div>
+      ${extraBody}
+    </div>
+  `;
+}
+
 function renderOverlay(): void {
   const shadow = ensureShadowHost();
 
@@ -160,7 +257,7 @@ function renderOverlay(): void {
         </div>
         <div class="sc-body">
           <div style="font-size:12.5px;color:#475569;">
-            Scanning listing attributes, gallery photos (local OCR), and free European vehicle databases…
+            Localizing license plates across gallery photos (local OCR) and cross-checking free European databases &amp; open technical catalogs…
           </div>
         </div>
       </div>
@@ -169,18 +266,27 @@ function renderOverlay(): void {
   }
 
   const r = currentReport;
+  const scannedCount = r.identifiers.ocrPhotosScanned ?? 0;
+  const noPlateLabel =
+    scannedCount > 0
+      ? `Scanned ${scannedCount} photos — plate covered/absent (enter manually)`
+      : 'Plate not visible in text/photos';
+
   const plateBadge = r.identifiers.plate
     ? `<span class="sc-plate-chip"><span class="sc-plate-eu">${escapeHtml(
         r.identifiers.plateCountry ?? r.listing.country
       )}</span><span class="sc-plate-num">${escapeHtml(r.identifiers.plate)}</span></span>
        <span class="sc-method-tag">(${formatMethodLabel(r.identifiers.plateMethod)})</span>`
-    : `<span class="sc-method-tag">Plate not visible in text/photos</span>`;
+    : `<span class="sc-method-tag">${escapeHtml(noPlateLabel)}</span>`;
 
   const vinLine = r.identifiers.vin
     ? `<div style="font-size:11px;color:#334155;font-family:monospace;">VIN: <strong>${escapeHtml(
         r.identifiers.vin
       )}</strong> (${formatMethodLabel(r.identifiers.vinMethod)})</div>`
     : '';
+
+  const copyTarget = r.identifiers.plate ?? r.identifiers.vin ?? '';
+  const topPortals = r.external.portals.slice(0, 4);
 
   shadow.innerHTML = `
     <style>${OVERLAY_SHADOW_CSS}</style>
@@ -202,7 +308,7 @@ function renderOverlay(): void {
         <div class="sc-summary-row">
           <div class="sc-kpi green">${r.summary.consistentCount} Consistent</div>
           <div class="sc-kpi orange">${r.summary.attentionCount} Attention</div>
-          <div class="sc-kpi neutral">${r.summary.unverifiedCount} Pending</div>
+          <div class="sc-kpi neutral">${r.summary.unverifiedCount} Portal Check</div>
         </div>
 
         <div class="sc-id-bar">
@@ -217,7 +323,7 @@ function renderOverlay(): void {
             showEditDrawer
               ? `
             <div class="sc-edit-drawer">
-              <input id="sc-in-plate" class="sc-input" type="text" placeholder="Plate (e.g. Z261RV)" value="${escapeHtml(
+              <input id="sc-in-plate" class="sc-input" type="text" placeholder="Plate (e.g. GB000RX)" value="${escapeHtml(
                 manualPlate || r.identifiers.plate || ''
               )}" />
               <input id="sc-in-km" class="sc-input" type="number" placeholder="Portal km (optional)" value="${escapeHtml(
@@ -233,51 +339,59 @@ function renderOverlay(): void {
           }
         </div>
 
-        <div class="sc-card-list">
-          ${r.comparisons
-            .map(
-              (c) => `
-            <div class="sc-card ${c.status}">
-              <div class="sc-card-head">
-                <span class="sc-card-title">${escapeHtml(c.label)}</span>
-                <span class="sc-badge ${c.status}">${
-                  c.status === 'consistent'
-                    ? 'Consistent'
-                    : c.status === 'attention'
-                    ? 'Attention'
-                    : 'Unverified'
-                }</span>
-              </div>
-              <div class="sc-vals">
-                <strong>Ad:</strong> ${escapeHtml(c.listingValue)} &nbsp;·&nbsp; <strong>DB:</strong> ${escapeHtml(
-                  c.databaseValue
-                )}
-              </div>
-              <div class="sc-note">${escapeHtml(c.conditionalNote)}</div>
+        ${
+          topPortals.length > 0
+            ? `
+          <div class="sc-quick-checks">
+            <div class="sc-quick-title">
+              <span>1-Click Free Official Checks${
+                copyTarget ? ` (auto-copies ${escapeHtml(copyTarget)})` : ''
+              }</span>
+              ${copyFeedbackText ? `<span class="sc-toast">${escapeHtml(copyFeedbackText)}</span>` : ''}
             </div>
-          `
-            )
-            .join('')}
+            <div class="sc-quick-grid">
+              ${topPortals
+                .map(
+                  (p) => `
+                <a class="sc-quick-pill sc-copy-on-open" data-copy="${escapeHtml(
+                  copyTarget
+                )}" href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(
+                  `${p.authority} — ${p.accessNote}`
+                )}">
+                  <span>[${escapeHtml(p.country)}] ${escapeHtml(p.title)}</span>
+                  <span>↗</span>
+                </a>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        `
+            : ''
+        }
+
+        <div class="sc-card-list">
+          ${r.comparisons.map((c) => renderComparisonCard(c, r)).join('')}
         </div>
 
-        <details class="sc-details">
-          <summary>Free Official Portals &amp; Web Searches (${
+        <details class="sc-details" open>
+          <summary>All Free Official Portals &amp; Web Searches (${
             r.external.portals.length + r.external.webSearchUrls.length
           })</summary>
           <div class="sc-portal-list">
             ${
-              r.identifiers.plate || r.identifiers.vin
+              copyTarget
                 ? `<button id="sc-copy-id" class="sc-small-btn" type="button">Copy ${escapeHtml(
-                    r.identifiers.plate ?? r.identifiers.vin ?? ''
+                    copyTarget
                   )} to Clipboard</button>`
                 : ''
             }
             ${r.external.portals
               .map(
                 (p) => `
-              <a class="sc-portal-link" href="${escapeHtml(
-                p.url
-              )}" target="_blank" rel="noopener noreferrer">
+              <a class="sc-portal-link sc-copy-on-open" data-copy="${escapeHtml(
+                copyTarget
+              )}" href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">
                 <span>[${escapeHtml(p.country)}] ${escapeHtml(p.title)}</span>
                 <span>↗</span>
               </a>
@@ -333,15 +447,31 @@ function renderOverlay(): void {
     void triggerAnalysis(false);
   });
 
-  shadow.getElementById('sc-copy-id')?.addEventListener('click', async () => {
-    const val = r.identifiers.plate ?? r.identifiers.vin ?? '';
-    if (val) {
-      try {
-        await navigator.clipboard.writeText(val);
-      } catch {
-        // Ignore clipboard permission failure
-      }
+  const inlineKmInput = shadow.getElementById('sc-inline-km-input') as HTMLInputElement | null;
+  const applyInlineKm = (): void => {
+    if (!inlineKmInput) return;
+    manualPortalKm = inlineKmInput.value.trim();
+    if (r.identifiers.plate && !manualPlate) {
+      manualPlate = r.identifiers.plate;
     }
+    void triggerAnalysis(false);
+  };
+  shadow.getElementById('sc-inline-km-btn')?.addEventListener('click', applyInlineKm);
+  inlineKmInput?.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') applyInlineKm();
+  });
+
+  shadow.getElementById('sc-copy-id')?.addEventListener('click', () => {
+    void copyIdentifierWithToast(copyTarget);
+  });
+
+  shadow.querySelectorAll('.sc-copy-on-open').forEach((anchor) => {
+    anchor.addEventListener('click', () => {
+      const val = (anchor as HTMLElement).getAttribute('data-copy') ?? '';
+      if (val) {
+        void copyIdentifierWithToast(val);
+      }
+    });
   });
 
   shadow.getElementById('sc-export-pdf')?.addEventListener('click', () => {

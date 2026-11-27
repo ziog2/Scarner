@@ -111,6 +111,10 @@ export function parseAutoScout24NextData(
 
   const make = readFormattedOrRaw(vehicle.make);
   const model = readFormattedOrRaw(vehicle.model);
+  const modelGroup = readFormattedOrRaw(vehicle.modelGroup);
+  const rawDataObj = (vehicle.rawData ?? {}) as Record<string, unknown>;
+  const classObj = (rawDataObj.classification ?? {}) as Record<string, unknown>;
+  const generation = readFormattedOrRaw(classObj.modelGeneration);
   const trim = readFormattedOrRaw(vehicle.modelVersionInput);
   const title = [make, model, trim].filter(Boolean).join(' ') || 'AutoScout24 Vehicle';
 
@@ -124,6 +128,7 @@ export function parseAutoScout24NextData(
   const envObj = (vehicle.environmentEuDirective ?? {}) as Record<string, unknown>;
   const co2Obj = (vehicle.co2emissionInGramPerKmWithFallback ?? {}) as Record<string, unknown>;
   const identifierObj = (vehicle.identifier ?? {}) as Record<string, unknown>;
+  const maintObj = (rawDataObj.maintenance ?? {}) as Record<string, unknown>;
 
   const structuredPlate =
     readFormattedOrRaw(vehicle.licensePlate) ??
@@ -136,9 +141,16 @@ export function parseAutoScout24NextData(
   const rawImages = Array.isArray(details.images) ? details.images : [];
   const imageUrls = rawImages
     .filter((img): img is string => typeof img === 'string' && img.startsWith('http'))
-    .slice(0, 10);
+    .slice(0, 16);
 
   const rawDesc = typeof details.description === 'string' ? stripHtml(details.description) : '';
+
+  const fullServiceRaw =
+    typeof vehicle.hasFullServiceHistory === 'boolean'
+      ? vehicle.hasFullServiceHistory
+      : typeof (maintObj.hasFullServiceHistory as Record<string, unknown> | undefined)?.raw === 'boolean'
+      ? Boolean((maintObj.hasFullServiceHistory as Record<string, unknown>).raw)
+      : null;
 
   return {
     marketplace: 'autoscout24',
@@ -149,6 +161,8 @@ export function parseAutoScout24NextData(
     title,
     make,
     model,
+    modelGroup,
+    generation,
     trim,
     priceEur: toNum(publicPrice.priceRaw) ?? toNum(publicPrice.price),
     mileageKm: toNum(vehicle.mileageInKmRaw) ?? toNum(vehicle.mileageInKm),
@@ -170,9 +184,10 @@ export function parseAutoScout24NextData(
     previousOwners: toNum(vehicle.noOfPreviousOwners),
     hadAccident: typeof vehicle.hadAccident === 'boolean' ? vehicle.hadAccident : null,
     isRental: typeof vehicle.isRental === 'boolean' ? vehicle.isRental : null,
-    hasFullServiceHistory:
-      typeof vehicle.hasFullServiceHistory === 'boolean' ? vehicle.hasFullServiceHistory : null,
-    nextInspectionDate: readFormattedOrRaw(vehicle.nextVehicleSafetyInspection),
+    hasFullServiceHistory: fullServiceRaw,
+    nextInspectionDate:
+      readFormattedOrRaw(vehicle.nextVehicleSafetyInspection) ??
+      readFormattedOrRaw(maintObj.nextVehicleSafetyInspection),
     carpassUrl: readFormattedOrRaw(vehicle.carpassMileageUrl),
     structuredPlate,
     structuredVin,
@@ -337,6 +352,6 @@ function parseFromJsonLdAndDom(doc: Document, pageUrl: string): ExtractedListing
     structuredPlate: null,
     structuredVin,
     description: descText,
-    imageUrls: imageUrls.slice(0, 10),
+    imageUrls: imageUrls.slice(0, 16),
   };
 }

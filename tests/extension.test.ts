@@ -268,4 +268,114 @@ describe('Comparison Engine: ±7,000 km Tolerance & Conditional Language', () =>
     const pdfBlob = generatePdfBlob(worstCaseReport);
     expect(pdfBlob.size).toBeGreaterThan(1500);
   });
+
+  it('handles all-zero plates like GB 000 RX (GBOOORX) and noisy side-band prefixes accurately', () => {
+    expect(extractPlateFromOcrText('GB-000RX', 'IT', 2020)?.plate).toBe('GB000RX');
+    expect(extractPlateFromOcrText('I GB OOO RX O', 'IT', 2020)?.plate).toBe('GB000RX');
+    expect(extractPlateFromOcrText('GB·000RX', 'IT', 2020)?.plate).toBe('GB000RX');
+    // Ensure exact window "GB000RX" outranks noisy 2-coercion prefix window "FGB000R"
+    expect(extractPlateFromOcrText('FGB000RX', 'IT', 2020)?.plate).toBe('GB000RX');
+  });
+
+  it('validates Open Specs Catalog match, EU Euro window chronology, and live Italian MIT portal URLs', async () => {
+    const { buildFreePortalsAndSearches } = await import('../src/providers/portalsAndWebSearch');
+    const { buildCleanPlateImage, detectLicensePlateRegions } = await import(
+      '../src/extractors/plateRegionDetector'
+    );
+
+    const itLinks = buildFreePortalsAndSearches({
+      country: 'IT',
+      plate: 'GB000RX',
+      vin: null,
+      make: 'MINI',
+      model: 'John Cooper Works',
+      year: 2020,
+      carpassUrl: null,
+    });
+    expect(itLinks.portals.some((p) => p.url.includes('/interrogazionistoricorevisioni/spa/'))).toBe(true);
+    expect(itLinks.portals.some((p) => p.url.includes('/ext/verifica-copertura-rc'))).toBe(true);
+    expect(itLinks.portals.every((p) => !p.url.endsWith('/verifica-revisioni-effettuate'))).toBe(true);
+
+    // Synthetic 320x200 dark car bumper with an EU blue left strip [80..88, 100..124] and white plate [89..195, 100..124] containing dark character bars
+    const W = 320;
+    const H = 200;
+    const rgba = new Uint8ClampedArray(W * H * 4);
+    for (let i = 0; i < W * H; i++) {
+      rgba[i * 4] = 35;
+      rgba[i * 4 + 1] = 38;
+      rgba[i * 4 + 2] = 42;
+      rgba[i * 4 + 3] = 255;
+    }
+    for (let y = 100; y < 124; y++) {
+      for (let x = 80; x <= 88; x++) {
+        const p = (y * W + x) * 4;
+        rgba[p] = 15;
+        rgba[p + 1] = 55;
+        rgba[p + 2] = 175;
+      }
+      for (let x = 89; x <= 195; x++) {
+        const p = (y * W + x) * 4;
+        const isStroke = y >= 104 && y < 120 && x >= 95 && x <= 188 && ((x - 95) % 12 < 5);
+        const v = isStroke ? 20 : 242;
+        rgba[p] = v;
+        rgba[p + 1] = v;
+        rgba[p + 2] = v;
+      }
+    }
+
+    const boxes = detectLicensePlateRegions(rgba, W, H, 3);
+    expect(boxes.length).toBeGreaterThan(0);
+    expect(boxes[0].method).toBe('eu_blue_band');
+    const clean = buildCleanPlateImage(rgba, W, H, boxes[0]);
+    expect(clean.width).toBeGreaterThan(100);
+    expect(clean.height).toBeGreaterThan(80);
+
+    // Open Specs Catalog & Euro statutory chronology check
+    const miniReport = buildVerificationReport(
+      makeBaseListing({
+        make: 'MINI',
+        model: 'John Cooper Works',
+        trim: '3p 2.0 GP Comfort',
+        registrationYear: 2020,
+        firstRegistrationDate: '2020-09-01',
+        powerKw: 225,
+        powerHp: 306,
+        displacementCc: 1998,
+        fuelType: 'Benzina',
+        euroClass: 'Euro 3', // Deliberately implausible for 2020 to test EU Euro chronology!
+      }),
+      {
+        plate: 'GB000RX',
+        plateCountry: 'IT',
+        plateMethod: 'photo_ocr',
+        plateConfidence: 0.92,
+        vin: null,
+        vinMethod: 'none',
+      },
+      makeExternal({
+        make: null,
+        model: null,
+        specCatalogLabel: 'MINI Hatch (2019) — 2.0L 8AT FWD (306 HP)',
+        generationYearRange: [2019, null],
+        registrationYear: null,
+        plateExpectedYearRange: [2019, 2020],
+        plateSeriesLabel: 'Italian Car Series GB (2019–2020)',
+        powerKw: 225,
+        powerHp: 306,
+        displacementCc: 1998,
+        fuelType: 'Gasoline',
+        euroClass: null,
+        latestRecordedMileageKm: null,
+      })
+    );
+
+    expect(miniReport.comparisons.find((c) => c.key === 'makeModel')?.status).toBe('consistent');
+    expect(miniReport.comparisons.find((c) => c.key === 'power')?.status).toBe('consistent');
+    expect(miniReport.comparisons.find((c) => c.key === 'displacement')?.status).toBe('consistent');
+    expect(miniReport.comparisons.find((c) => c.key === 'fuel')?.status).toBe('consistent');
+    expect(miniReport.comparisons.find((c) => c.key === 'euroClass')?.status).toBe('attention');
+    for (const c of miniReport.comparisons) {
+      expect(hasForbiddenAbsoluteTerms(c.conditionalNote)).toBe(false);
+    }
+  });
 });

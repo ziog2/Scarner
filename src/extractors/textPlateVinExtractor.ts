@@ -134,46 +134,86 @@ export function extractPlateFromText(
 
 export function extractPlateFromOcrText(
   ocrText: string,
-  countryHint: CountryCode
+  countryHint: CountryCode,
+  registrationYearHint?: number | null
 ): { plate: string; country: CountryCode; confidence: number } | null {
   if (!ocrText) return null;
 
   const lines = ocrText
     .toUpperCase()
+    .replace(/[·•._]/g, ' ')
     .replace(/[^A-Z0-9\s-]/g, ' ')
     .split(/[\r\n]+/)
     .map((l) => l.trim())
     .filter(Boolean);
 
+  let bestMatch: {
+    plate: string;
+    country: CountryCode;
+    confidence: number;
+    score: number;
+  } | null = null;
+
   for (const line of lines) {
-    // Strip leading EU country band single letter (I, D, F, E, NL, B) if separated by space
-    const stripped = line.replace(/^(?:NL|IT|DE|FR|ES|BE|AT|PL|I|D|F|E|B)\s+/, '');
+    // Strip leading EU country band code (I, D, F, E, NL, B) and trailing IT province circle ('O'/'0') when separated by whitespace
+    const stripped = line
+      .replace(/^(?:NL|IT|DE|FR|ES|BE|AT|PL|I|D|F|E|B)\s+/, '')
+      .replace(/\s+(?:O|0)$/, '');
     const compact = stripped.replace(/[\s-]+/g, '');
 
-    // Check sliding windows of length 6 and 7
+    // Check sliding windows of length 7 and 6 and score every valid disambiguated candidate
     for (const len of [7, 6]) {
       if (compact.length < len) continue;
       for (let i = 0; i <= compact.length - len; i++) {
         const sub = compact.slice(i, i + len);
         if (FALSE_POSITIVE_TOKENS.has(sub)) continue;
-        // Must have at least 2 letters and at least 2 digits to avoid random bumper noise
+
+        // Require at least 2 letters and at least 1 digit OR digit-lookalike (O, Q, D, I, L, B, S, Z, G)
+        // so plates like "GB OOO RX" ("GBOOORX") are never prematurely discarded before O->0 coercion
         const letterCount = (sub.match(/[A-Z]/g) ?? []).length;
-        const digitCount = (sub.match(/[0-9]/g) ?? []).length;
-        if (letterCount < 2 || digitCount < 1) continue;
+        const digitOrLookalikeCount = (sub.match(/[0-9OQDILBSZG]/g) ?? []).length;
+        if (letterCount < 2 || digitOrLookalikeCount < 2) continue;
 
         const candidate = disambiguateOcrToken(sub, countryHint);
-        if (candidate && candidate.isValid) {
-          return {
+        if (!candidate || !candidate.isValid) continue;
+        if (FALSE_POSITIVE_TOKENS.has(candidate.normalized)) continue;
+
+        // Reject pure-letter dictionary words that required >= 3 coercions unless all coercions were O->0
+        const rawDigits = (sub.match(/[0-9]/g) ?? []).length;
+        if (rawDigits === 0 && candidate.coercionCost > 1.3) continue;
+
+        let score = 100 - candidate.coercionCost * 12;
+        if (compact.length === len) score += 6; // Clean full-token match bonus
+
+        if (registrationYearHint && candidate.expectedYearRange) {
+          const [minY, maxY] = candidate.expectedYearRange;
+          if (registrationYearHint >= minY - 1 && registrationYearHint <= maxY + 1) {
+            score += 9;
+          }
+        }
+
+        const confidence =
+          candidate.coercionCost === 0
+            ? 0.92
+            : candidate.coercionCost <= 1.2
+            ? 0.84
+            : 0.75;
+
+        if (!bestMatch || score > bestMatch.score) {
+          bestMatch = {
             plate: candidate.normalized,
             country: candidate.country,
-            confidence: candidate.normalized === sub ? 0.88 : 0.76,
+            confidence,
+            score,
           };
         }
       }
     }
   }
 
-  return null;
+  return bestMatch
+    ? { plate: bestMatch.plate, country: bestMatch.country, confidence: bestMatch.confidence }
+    : null;
 }
 
 export function detectIdentifiersFromListing(listing: ExtractedListing): DetectedIdentifier {

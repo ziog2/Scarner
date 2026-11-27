@@ -274,18 +274,44 @@ const LETTER_TO_DIGIT: Record<string, string> = {
   B: '8',
 };
 
+export interface OcrDisambiguationMatch extends PlateChronologyResult {
+  coercionCost: number;
+}
+
+const LIGHT_PAIRS = new Set(['O>0', 'Q>0', 'D>0', '0>D', 'I>1', 'L>1', '1>L']);
+
+function computeCoercionCost(original: string, coerced: string): { cost: number; heavyCount: number } {
+  let cost = 0;
+  let heavyCount = 0;
+  for (let i = 0; i < original.length; i++) {
+    if (original[i] !== coerced[i]) {
+      const pair = `${original[i]}>${coerced[i]}`;
+      if (LIGHT_PAIRS.has(pair)) {
+        cost += 0.4;
+      } else {
+        cost += 1.6;
+        heavyCount++;
+      }
+    }
+  }
+  return { cost, heavyCount };
+}
+
 /**
- * Resolves positional OCR character/digit confusions (e.g. "GG4B2KL" -> "GG482KL")
- * for common European license plate schemas.
+ * Resolves positional OCR character/digit confusions (e.g. "GBOOORX" -> "GB000RX", "GG4B2KL" -> "GG482KL")
+ * for common European license plate schemas, tracking coercion cost to prevent noisy false positives.
  */
-export function disambiguateOcrToken(rawToken: string, hintCountry: CountryCode): PlateChronologyResult | null {
+export function disambiguateOcrToken(
+  rawToken: string,
+  hintCountry: CountryCode
+): OcrDisambiguationMatch | null {
   const clean = normalizePlate(rawToken);
   if (clean.length < 5 || clean.length > 8) return null;
 
-  // Direct match first
+  // Direct match first (zero coercion cost)
   const direct = analyzePlateChronology(clean, hintCountry);
   if (direct.isValid && direct.country !== 'EU') {
-    return direct;
+    return { ...direct, coercionCost: 0 };
   }
 
   // Try LL NNN LL coercion (Italy / France 7-char)
@@ -297,8 +323,12 @@ export function disambiguateOcrToken(rawToken: string, hintCountry: CountryCode)
     for (const i of [2, 3, 4]) {
       if (LETTER_TO_DIGIT[chars[i]]) chars[i] = LETTER_TO_DIGIT[chars[i]];
     }
-    const coerced = analyzePlateChronology(chars.join(''), hintCountry === 'FR' ? 'FR' : 'IT');
-    if (coerced.isValid) return coerced;
+    const joined = chars.join('');
+    const { cost, heavyCount } = computeCoercionCost(clean, joined);
+    if (heavyCount <= 2) {
+      const coerced = analyzePlateChronology(joined, hintCountry === 'FR' ? 'FR' : 'IT');
+      if (coerced.isValid) return { ...coerced, coercionCost: cost };
+    }
   }
 
   // Try NNNN LLL coercion (Spain 7-char)
@@ -310,8 +340,12 @@ export function disambiguateOcrToken(rawToken: string, hintCountry: CountryCode)
     for (const i of [4, 5, 6]) {
       if (DIGIT_TO_LETTER[chars[i]]) chars[i] = DIGIT_TO_LETTER[chars[i]];
     }
-    const coerced = analyzePlateChronology(chars.join(''), 'ES');
-    if (coerced.isValid) return coerced;
+    const joined = chars.join('');
+    const { cost, heavyCount } = computeCoercionCost(clean, joined);
+    if (heavyCount <= 2) {
+      const coerced = analyzePlateChronology(joined, 'ES');
+      if (coerced.isValid) return { ...coerced, coercionCost: cost };
+    }
   }
 
   // Try LL NN LLL coercion (UK 7-char)
@@ -323,14 +357,18 @@ export function disambiguateOcrToken(rawToken: string, hintCountry: CountryCode)
     for (const i of [2, 3]) {
       if (LETTER_TO_DIGIT[chars[i]]) chars[i] = LETTER_TO_DIGIT[chars[i]];
     }
-    const coerced = analyzePlateChronology(chars.join(''), 'GB');
-    if (coerced.isValid) return coerced;
+    const joined = chars.join('');
+    const { cost, heavyCount } = computeCoercionCost(clean, joined);
+    if (heavyCount <= 2) {
+      const coerced = analyzePlateChronology(joined, 'GB');
+      if (coerced.isValid) return { ...coerced, coercionCost: cost };
+    }
   }
 
   // Dutch 6-char check
   if (clean.length === 6 && hintCountry === 'NL') {
     const nl = analyzePlateChronology(clean, 'NL');
-    if (nl.isValid) return nl;
+    if (nl.isValid) return { ...nl, coercionCost: 0 };
   }
 
   return null;

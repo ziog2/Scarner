@@ -44,29 +44,62 @@ async function ensureOffscreenDocument(): Promise<void> {
   await creatingOffscreen;
 }
 
+async function waitForOffscreenReady(): Promise<void> {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const pong = await chrome.runtime.sendMessage({
+        target: 'scarner-offscreen',
+        type: 'PING_OFFSCREEN',
+      });
+      if (pong?.ready) return;
+    } catch {
+      // Offscreen script still parsing
+    }
+    await new Promise((r) => setTimeout(r, 120));
+  }
+}
+
 async function runPhotoOcr(
   imageUrls: string[],
-  countryHint: CountryCode
+  countryHint: CountryCode,
+  registrationYearHint?: number | null
 ): Promise<{
   found: boolean;
   plate: string | null;
   country: CountryCode | null;
   confidence: number;
   sourceImageUrl: string | null;
+  photosScanned: number;
 }> {
   try {
     await ensureOffscreenDocument();
+    await waitForOffscreenReady();
     const res = await chrome.runtime.sendMessage({
       target: 'scarner-offscreen',
       type: 'RUN_GALLERY_OCR',
       imageUrls,
       countryHint,
+      registrationYearHint: registrationYearHint ?? null,
     });
     return (
-      res ?? { found: false, plate: null, country: null, confidence: 0, sourceImageUrl: null }
+      res ?? {
+        found: false,
+        plate: null,
+        country: null,
+        confidence: 0,
+        sourceImageUrl: null,
+        photosScanned: 0,
+      }
     );
   } catch {
-    return { found: false, plate: null, country: null, confidence: 0, sourceImageUrl: null };
+    return {
+      found: false,
+      plate: null,
+      country: null,
+      confidence: 0,
+      sourceImageUrl: null,
+      photosScanned: 0,
+    };
   }
 }
 
@@ -105,7 +138,12 @@ async function handleAnalyzeListing(msg: AnalyzeMessage): Promise<VerificationRe
     msg.listing.imageUrls.length > 0 &&
     (settings.enableOcrOnLoad || msg.forceOcr)
   ) {
-    const ocrResult = await runPhotoOcr(msg.listing.imageUrls, msg.listing.country);
+    const ocrResult = await runPhotoOcr(
+      msg.listing.imageUrls,
+      msg.listing.country,
+      msg.listing.registrationYear
+    );
+    identifiers.ocrPhotosScanned = ocrResult.photosScanned;
     if (ocrResult.found && ocrResult.plate) {
       identifiers.plate = ocrResult.plate;
       identifiers.plateCountry = ocrResult.country ?? msg.listing.country;

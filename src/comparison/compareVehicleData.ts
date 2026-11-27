@@ -92,8 +92,8 @@ export function buildVerificationReport(
 ): VerificationReport {
   const comparisons: FieldComparison[] = [];
 
-  // 1. Make & Model
-  const adMakeModel = [listing.make, listing.model].filter(Boolean).join(' ') || listing.title;
+  // 1. Make, Model & Factory Generation
+  const adMakeModel = [listing.make, listing.model, listing.trim].filter(Boolean).join(' ') || listing.title;
   const dbMakeModel = [external.make, external.model].filter(Boolean).join(' ');
   if (listing.make && external.make) {
     const makeMatches =
@@ -108,7 +108,7 @@ export function buildVerificationReport(
     comparisons.push({
       key: 'makeModel',
       label: 'Make & Model',
-      listingValue: adMakeModel,
+      listingValue: [listing.make, listing.model].filter(Boolean).join(' ') || adMakeModel,
       databaseValue: dbMakeModel || external.make,
       status: makeMatches && modelMatches ? 'consistent' : 'attention',
       source: 'Registry / VIN Decoder',
@@ -117,15 +117,41 @@ export function buildVerificationReport(
           ? 'The make and model in the listing align with the external record.'
           : 'The make or model designation in the listing would appear to differ from the external record; this might reflect a badge variant or commercial naming difference.',
     });
+  } else if (external.specCatalogLabel) {
+    let genConsistent = true;
+    let rangeText = '';
+    if (listing.registrationYear && external.generationYearRange) {
+      const [yStart, yEnd] = external.generationYearRange;
+      const effEnd = yEnd ?? new Date().getFullYear() + 1;
+      rangeText = ` (${yStart}–${yEnd ?? 'present'})`;
+      genConsistent =
+        listing.registrationYear >= yStart - 1 && listing.registrationYear <= effEnd + 1;
+    }
+
+    comparisons.push({
+      key: 'makeModel',
+      label: 'Make, Model & Trim Catalog',
+      listingValue: adMakeModel,
+      databaseValue: `${external.specCatalogLabel}${rangeText}`,
+      status: genConsistent ? 'consistent' : 'attention',
+      source: 'Open Specs Catalog (ODbL)',
+      conditionalNote: genConsistent
+        ? 'The make, model, and trim align with the open factory specification catalog for this generation.'
+        : `The listed registration year (${listing.registrationYear}) would appear to fall outside the typical factory production window${rangeText} for this trim; this might reflect a late registration or a trim selection difference.`,
+    });
   } else {
     comparisons.push({
       key: 'makeModel',
       label: 'Make & Model',
       listingValue: adMakeModel,
-      databaseValue: 'Awaiting Plate / VIN match',
+      databaseValue: identifiers.plate
+        ? `Plate ${identifiers.plate} recognized (use free portals below)`
+        : 'Awaiting Plate / VIN match',
       status: 'unverified',
-      source: 'Listing only',
-      conditionalNote: 'Providing a recognized license plate or 17-character VIN would allow cross-checking the vehicle identity.',
+      source: identifiers.plate ? 'Plate Format Verified' : 'Listing only',
+      conditionalNote: identifiers.plate
+        ? 'This national registry does not expose an unauthenticated make/model API; you may use the free official portal buttons below or enter a 17-character VIN to cross-check chassis identity.'
+        : 'Providing a recognized license plate or 17-character VIN would allow cross-checking the vehicle identity.',
     });
   }
 
@@ -274,7 +300,7 @@ export function buildVerificationReport(
     });
   }
 
-  // 7. Euro Emissions Class
+  // 7. Euro Emissions Class (vs Registry OR EU Statutory Type-Approval Window)
   if (listing.euroClass && external.euroClass) {
     const adEuro = extractEuroNumber(listing.euroClass);
     const dbEuro = extractEuroNumber(external.euroClass);
@@ -290,6 +316,31 @@ export function buildVerificationReport(
         ? 'The declared emissions standard aligns with the environmental record.'
         : `The listed emissions class (${listing.euroClass}) might differ from the registry value (${external.euroClass}), which could be relevant for urban low-emission zones.`,
     });
+  } else if (listing.euroClass && listing.registrationYear) {
+    const adEuroNum = extractEuroNumber(listing.euroClass);
+    const euroWindows: Record<string, [number, number]> = {
+      '1': [1991, 1998],
+      '2': [1995, 2002],
+      '3': [1999, 2007],
+      '4': [2004, 2012],
+      '5': [2008, 2016],
+      '6': [2013, 2028],
+    };
+    const win = adEuroNum ? euroWindows[adEuroNum] : undefined;
+    if (win) {
+      const plausible = listing.registrationYear >= win[0] && listing.registrationYear <= win[1];
+      comparisons.push({
+        key: 'euroClass',
+        label: 'Emissions Standard vs. Year',
+        listingValue: `${listing.euroClass} (${listing.registrationYear})`,
+        databaseValue: `EU Euro ${adEuroNum} window (${win[0]}–${win[1]})`,
+        status: plausible ? 'consistent' : 'attention',
+        source: 'EU Type-Approval Chronology',
+        conditionalNote: plausible
+          ? `The declared ${listing.euroClass} standard aligns with the EU type-approval period for a ${listing.registrationYear} vehicle.`
+          : `A ${listing.registrationYear} vehicle would not typically fall within the standard Euro ${adEuroNum} introduction window (${win[0]}–${win[1]}); you may wish to confirm the exact directive code on the registration certificate.`,
+      });
+    }
   }
 
   // 8. CO2 Emissions
