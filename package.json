@@ -1,0 +1,26 @@
+{
+  "name": "scarner-extension",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Free, open-source Chrome Extension for AutoScout24 vehicle verification using open European registries, OCR plate extraction, and PDF/CSV reports.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "ingest-telemetry": "node scripts/ingest-telemetry.mjs"
+  },
+  "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "jspdf": "^4.2.1",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

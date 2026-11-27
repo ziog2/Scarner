@@ -1,0 +1,13 @@
+{
+  "updatedAt": "2026-11-24T22:56:27.470Z",
+  "totalEvents": 0,
+  "listingsAnalyzed": 0,
+  "uniqueVehiclesHashed": 0,
+  "exports": {
+    "pdf": 0,
+    "csv": 0
+  },
+  "byCountry": {},
+  "byMarketplace": {},
+  "byDetectionMethod": {}
+}
