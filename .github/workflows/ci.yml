@@ -31,11 +31,8 @@ jobs:
       - name: Build Manifest V3 Chrome Extension
         run: npm run build
 
-      - name: Package unpacked extension zip
-        run: cd dist && zip -r ../scarner-chrome-extension.zip .
-
-      - name: Upload ready-to-load Chrome Extension artifact
+      - name: Upload ready-to-load Chrome Extension folder
         uses: actions/upload-artifact@v4
         with:
           name: scarner-chrome-extension
-          path: scarner-chrome-extension.zip
+          path: dist/
